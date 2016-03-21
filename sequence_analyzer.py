@@ -11,13 +11,13 @@ Data: 2016-03-17
 """
 
 from keras.models import Sequential
-from keras.layers.core import Dense, Activation, Dropout
+from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM
 import numpy as np
 import random
 import sys
 
-# import IPython
+# from IPython import embed
 
 
 class LogSequenceAnalyzer(object):
@@ -33,10 +33,8 @@ class LogSequenceAnalyzer(object):
 
     def build_lstm(self, dropout=0.2):
         """
-        Stacked LSTM with specified dropout rate
-        :param dropout: dropout rate
-        :return: model built with softmax activation,
-            cross entropy loss and rmsprop optimizer
+        Stacked LSTM with specified dropout rate, a model built with
+        softmax activation, cross entropy loss and rmsprop optimizer
         """
         # 2 layer LSTM with specified number of nodes in the hidden layer.
         self.model.add(LSTM(self.input_len, self.hidden_len,
@@ -53,9 +51,6 @@ class LogSequenceAnalyzer(object):
     def sample(cls, prob, temperature=1.0):
         """
         softmax function for reinforcement learning
-        :param prob: prob array
-        :param temperature: affects diversity
-        :return:
         """
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
@@ -66,7 +61,6 @@ def get_data():
     """
     retrieves data from a plain txt file and formats it
     using 1-of-k encoding
-    :return: relevant data extracted
     """
     # should be plain txt file
     text = open('input.txt', 'r').read().lower()
@@ -74,23 +68,37 @@ def get_data():
     # vocab
     chars = set(text)
     print("total chars: ", len(chars))
+
+
+
+
+
+    # ------------------------ No need ------------------------ #
     char_to_indices = dict((char, idx) for idx, char in enumerate(chars))
     indices_to_chars = dict((idx, char) for idx, char in enumerate(chars))
+    # ------------------------ No need ------------------------ #
+
+
+
+
 
     # separate into array of sentences (max 20 chars)
-    max_len = 20
+    length = 20
     step = 3
     sentences = []
     next_chars = []
-    for i in range(0, len(text) - max_len, step):
-        sentences.append(text[i: i + max_len])
-        next_chars.append(text[i + max_len])
+    for i in range(0, len(text) - length, step):
+        sentences.append(text[i: i + length])
+        next_chars.append(text[i + length])
     print("total # of sentences: ", len(sentences))
+
+
+
 
     # 1-of-k encoding (all zeros except for a single one at
     # the index of the character in the vocab)
     # all input sentences encoded
-    x = np.zeros((len(sentences), max_len, len(chars)), dtype=np.bool)
+    x = np.zeros((len(sentences), length, len(chars)), dtype=np.bool)
     # expected outputs for each sentence
     y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
     for i, sentence in enumerate(sentences):
@@ -100,16 +108,15 @@ def get_data():
         # mark the corresponding character in expected output as 1
         y[i, char_to_indices[next_chars[i]]] = 1
 
-    return text, max_len, len(chars), char_to_indices, indices_to_chars, x, y
+    return text, length, len(chars), char_to_indices, indices_to_chars, x, y
 
 
 def train():
     """
     Trains the network and outputs the generated text.
     Trains using batch size of 100, 60 epochs total.
-    :return:
     """
-    (text, max_len, input_len, char_to_indices, indices_to_chars,
+    (text, length, input_len, char_to_indices, indices_to_chars,
      x, y) = get_data()
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.5
     lstm = LogSequenceAnalyzer(input_len, 100, input_len)
@@ -119,22 +126,22 @@ def train():
 
     # train model and output generated text
     for iteration in range(1, 60):
-        print "=============================================================="
+        print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
         lstm.model.fit(x, y, batch_size=100, nb_epoch=1)
 
-        start_index = random.randint(0, len(text) - max_len - 1)
+        start_index = random.randint(0, len(text) - length - 1)
         for T in [0.2, 0.5, 1.0, 1.2]:
             print("------------Temperature", T)
             generated = ''
-            sentence = text[start_index:start_index + max_len]
+            sentence = text[start_index:start_index + length]
             generated += sentence
             print "Generating with seed: " + sentence
             sys.stdout.write(generated)
 
             # generate 400 chars
             for i in range(400):
-                seed = np.zeros((1, max_len, input_len))
+                seed = np.zeros((1, length, input_len))
                 # format input
                 for t, char in enumerate(sentence):
                     seed[0, t, char_to_indices[char]] = 1
@@ -152,7 +159,9 @@ def train():
                 # in the sequence
                 generated += next_char
                 sentence = sentence[1:] + next_char
-            print()
+
+            print ""
+
 
 if __name__ == '__main__':
     train()
