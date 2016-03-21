@@ -6,9 +6,11 @@ It is based on [this](https://github.com/fchollet/keras/blob/master/examples/lst
 
 - [Python 2.7](https://www.python.org/downloads/)
 - [NumPy](http://www.numpy.org/): The fundamental package needed for scientific computing with Python.
+- [SciPy](http://scipy.org/):  Python-based ecosystem of open-source software for mathematics, science, and engineering.
 - [Theano](http://deeplearning.net/software/theano/): A Python library that allows you to define, optimize, and evaluate mathematical expressions involving multi-dimensional arrays efficiently.
 - [Tensorflow](https://www.tensorflow.org/): An open source software library for numerical computation using data flow graphs.
 - [Keras](http://keras.io/): A minimalist, highly modular neural networks library, written in Python and capable of running on top of either TensorFlow or Theano.
+- GPU Support (Optional but highly recommended). Instructions for enabling GPU [for Theano](http://deeplearning.net/software/theano/install.html#using-the-gpu) and [for TensorFlow](https://www.tensorflow.org/versions/r0.7/get_started/os_setup.html#optional-linux-enable-gpu-support). 
 
 ## Materials
 
