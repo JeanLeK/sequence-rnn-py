@@ -1,6 +1,10 @@
 """
-This program analyze the los sequence based on Recurrent Neural Network (RNN)
-with Long Short-Term Memory (LSTM).
+This program analyze the los sequence using Recurrent Neural Network (RNN)
+with Long Short-Term Memory (LSTM) based on the python library Keras.
+
+"Keras is a minimalist, highly modular neural networks library, written in
+Python and capable of running on top of either TensorFlow or Theano.""
+                                                ---- Keras (http://keras.io/)
 
 Author: Chang Liu (fluency03)
 Data: 2016-03-17
