@@ -1,5 +1,5 @@
-cython
-git+https://github.com/numpy/numpy.git
-git+https://github.com/scipy/scipy.git
-git+https://github.com/Theano/Theano.git
 git+https://github.com/fchollet/keras.git
+git+https://github.com/Theano/Theano.git
+git+https://github.com/scipy/scipy.git
+git+https://github.com/numpy/numpy.git
+cython
