@@ -24,7 +24,8 @@ class LogSequenceAnalyzer(object):
     """
     A log sequence analyzer.
     """
-    def __init__(self, input_len, hidden_len, output_len, return_sequence=True):
+    def __init__(self, length, input_len, hidden_len, output_len, return_sequence=True):
+        self.length = length
         self.input_len = input_len
         self.hidden_len = hidden_len
         self.output_len = output_len
@@ -37,13 +38,11 @@ class LogSequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer
         """
         # 2 layer LSTM with specified number of nodes in the hidden layer.
-        self.model.add(LSTM(self.input_len, self.hidden_len,
-                            return_sequences=self.return_sequence))
+        self.model.add(LSTM(self.hidden_len, return_sequences=self.return_sequence, input_shape=(self.length, self.input_len)))
         self.model.add(Dropout(dropout))
-        self.model.add(LSTM(self.hidden_len, self.hidden_len,
-                            return_sequences=False))
+        self.model.add(LSTM(self.hidden_len, return_sequences=False))
         self.model.add(Dropout(dropout))
-        self.model.add(Dense(self.hidden_len, self.output_len))
+        self.model.add(Dense(self.output_len))
         self.model.add(Activation('softmax'))
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
@@ -62,53 +61,43 @@ def get_data():
     retrieves data from a plain txt file and formats it
     using 1-of-k encoding
     """
-    # should be plain txt file
-    text = open('input.txt', 'r').read().lower()
+    # read file and convert ids of each line into array of numbers
+    with open( "/home/cliu/Documents/SC-1/sequence", 'r') as f:
+        sequence = [int(id_) for id_ in f]
 
-    # vocab
-    chars = set(text)
-    print("total chars: ", len(chars))
+    # number of template id types
+    vocab_size = 1656
 
-
-
-
-
-    # ------------------------ No need ------------------------ #
-    char_to_indices = dict((char, idx) for idx, char in enumerate(chars))
-    indices_to_chars = dict((idx, char) for idx, char in enumerate(chars))
-    # ------------------------ No need ------------------------ #
-
-
-
-
-
-    # separate into array of sentences (max 20 chars)
+    # length of one sentence
     length = 20
+    # sample step per sentence
     step = 3
+
+    # list of sentences
     sentences = []
-    next_chars = []
-    for i in range(0, len(text) - length, step):
-        sentences.append(text[i: i + length])
-        next_chars.append(text[i + length])
-    print("total # of sentences: ", len(sentences))
+    # list of the next id for each of the according sentence
+    next_ids = []
 
+    for i in range(0, len(sequence) - length, step):
+        sentences.append(sequence[i: i + length])
+        next_ids.append(sequence[i + length])
 
+    print "total # of sentences: %d" %len(sentences)
 
-
-    # 1-of-k encoding (all zeros except for a single one at
-    # the index of the character in the vocab)
-    # all input sentences encoded
-    x = np.zeros((len(sentences), length, len(chars)), dtype=np.bool)
+    # one-hot vector (all zeros except for a single one at
+    # the exact postion of this id number)
+    x = np.zeros((len(sentences), length, vocab_size), dtype=np.bool)
     # expected outputs for each sentence
-    y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
-    for i, sentence in enumerate(sentences):
-        for t, char in enumerate(sentence):
-            # mark the each corresponding character in a sentence as 1
-            x[i, t, char_to_indices[char]] = 1
-        # mark the corresponding character in expected output as 1
-        y[i, char_to_indices[next_chars[i]]] = 1
+    y = np.zeros((len(sentences), vocab_size), dtype=np.bool)
 
-    return text, length, len(chars), char_to_indices, indices_to_chars, x, y
+    for i, sentence in enumerate(sentences):
+        for t, id_ in enumerate(sentence):
+            # mark the each corresponding character in a sentence as 1
+            x[i, t, id_] = 1
+        # mark the corresponding character in expected output as 1
+        y[i, next_ids[i]] = 1
+
+    return sequence, length, vocab_size, x, y
 
 
 def train():
@@ -116,49 +105,48 @@ def train():
     Trains the network and outputs the generated text.
     Trains using batch size of 100, 60 epochs total.
     """
-    (text, length, input_len, char_to_indices, indices_to_chars,
-     x, y) = get_data()
+    sequence, length, input_len, x, y = get_data()
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.5
-    lstm = LogSequenceAnalyzer(input_len, 100, input_len)
+    lstm = LogSequenceAnalyzer(length, input_len, 100, input_len)
     print "Building Model..."
     # IPython.embed()
-    lstm.build_lstm(dropout=0.5)
+    lstm.build_lstm(dropout=0.2)
 
     # train model and output generated text
     for iteration in range(1, 60):
+        print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
         lstm.model.fit(x, y, batch_size=100, nb_epoch=1)
 
-        start_index = random.randint(0, len(text) - length - 1)
+        start_index = random.randint(0, len(sequence) - length - 1)
         for T in [0.2, 0.5, 1.0, 1.2]:
             print("------------Temperature", T)
-            generated = ''
-            sentence = text[start_index:start_index + length]
-            generated += sentence
-            print "Generating with seed: " + sentence
-            sys.stdout.write(generated)
+            # generated = ''
+            sentence = sequence[start_index:start_index + length]
+            generated = sentence
+            print "Generating with seed: " + ' '.join(str(s) for s in sentence)
+            sys.stdout.write(' '.join(str(g) for g in generated))
 
             # generate 400 chars
-            for i in range(400):
+            for i in range(40):
                 seed = np.zeros((1, length, input_len))
                 # format input
-                for t, char in enumerate(sentence):
-                    seed[0, t, char_to_indices[char]] = 1
+                for t in range(0, length):
+                    seed[0, t, sentence[t]] = 1
 
                 # get predictions
                 # verbose = 0, no logging
                 predictions = lstm.model.predict(seed, verbose=0)[0]
-                next_index = lstm.sample(predictions, T)
-                next_char = indices_to_chars[next_index]
+                next_id = lstm.sample(predictions, T)
                 # print next char
-                sys.stdout.write(next_char)
+                sys.stdout.write(str(next_id))
                 sys.stdout.flush()
 
                 # use current output as input to predict the next character
                 # in the sequence
-                generated += next_char
-                sentence = sentence[1:] + next_char
+                generated.append(next_id)
+                sentence = sentence[1:].append(next_id)
 
             print ""
 
