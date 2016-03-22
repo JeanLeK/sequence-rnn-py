@@ -1,3 +1,4 @@
+cython
 git+https://github.com/numpy/numpy.git
 git+https://github.com/scipy/scipy.git
 git+https://github.com/Theano/Theano.git
