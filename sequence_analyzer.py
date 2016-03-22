@@ -1,5 +1,5 @@
 """
-This program analyze the los sequence using Recurrent Neural Network (RNN)
+This program analyze the integer sequence using Recurrent Neural Network (RNN)
 with Long Short-Term Memory (LSTM) based on the python library Keras.
 
 "Keras is a minimalist, highly modular neural networks library, written in
@@ -26,9 +26,9 @@ class IntSequenceAnalyzer(object):
     """
     A integer sequence analyzer.
     """
-    def __init__(self, length, input_len, hidden_len, output_len,
+    def __init__(self, sentence_length, input_len, hidden_len, output_len,
                  return_sequence=True):
-        self.length = length
+        self.sentence_length = sentence_length
         self.input_len = input_len
         self.hidden_len = hidden_len
         self.output_len = output_len
@@ -43,7 +43,8 @@ class IntSequenceAnalyzer(object):
         # 2 layer LSTM with specified number of nodes in the hidden layer.
         self.model.add(LSTM(self.hidden_len,
                             return_sequences=self.return_sequence,
-                            input_shape=(self.length, self.input_len)))
+                            input_shape=(self.sentence_length,
+                                         self.input_len)))
         self.model.add(Dropout(dropout))
 
         self.model.add(LSTM(self.hidden_len, return_sequences=False))
@@ -73,11 +74,16 @@ def get_data():
     with open("sequence", 'r') as f:
         sequence = [int(id_) for id_ in f]
 
+    # vocabulary of the input sequence
+    vocab = set(sequence)
+    # add 0, representing
+    vocab.add(0)
+
     # number of template id types
-    vocab_size = 1656
+    vocab_size = len(vocab)
 
     # length of one sentence
-    length = 20
+    sentence_length = 20
     # sample step per sentence
     step = 3
 
@@ -87,15 +93,15 @@ def get_data():
     next_ids = []
 
     # creat batch data and next id sequences
-    for i in range(0, len(sequence) - length, step):
-        sentences.append(sequence[i: i + length])
-        next_ids.append(sequence[i + length])
+    for i in range(0, len(sequence) - sentence_length, step):
+        sentences.append(sequence[i: i + sentence_length])
+        next_ids.append(sequence[i + sentence_length])
 
     print "total # of sentences: %d" %len(sentences)
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
-    x = np.zeros((len(sentences), length, vocab_size), dtype=np.bool)
+    x = np.zeros((len(sentences), sentence_length, vocab_size), dtype=np.bool)
     # expected outputs for each sentence
     y = np.zeros((len(sentences), vocab_size), dtype=np.bool)
 
@@ -106,7 +112,7 @@ def get_data():
         # mark the corresponding character in expected output as 1
         y[i, next_ids[i]] = 1
 
-    return sequence, length, vocab_size, x, y
+    return sequence, sentence_length, vocab_size, x, y
 
 
 def train():
@@ -114,11 +120,12 @@ def train():
     Trains the network and outputs the generated text.
     Trains using batch size of 100, 60 epochs total.
     """
-    sequence, length, input_len, x, y = get_data()
+    sequence, sentence_length, input_len, x, y = get_data()
 
     hidden_len = 512
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.5
-    lstm = IntSequenceAnalyzer(length, input_len, hidden_len, input_len)
+    lstm = IntSequenceAnalyzer(sentence_length,
+                               input_len, hidden_len, input_len)
     print "Building Model..."
     # IPython.embed()
     lstm.build_lstm(dropout=0.2)
@@ -130,10 +137,10 @@ def train():
         print "Iteration: ", iteration
         lstm.model.fit(x, y, batch_size=128, nb_epoch=1)
 
-        start_index = random.randint(0, len(sequence) - length - 1)
+        start_index = random.randint(0, len(sequence) - sentence_length - 1)
         for T in [0.2, 0.5, 1.0, 1.2]:
             print "------------Temperature: %.2f" %T
-            sentence = sequence[start_index:start_index + length]
+            sentence = sequence[start_index:start_index + sentence_length]
             # print sentence
             generated = sentence
             print "With seed: " + ' '.join(str(s) for s in sentence) + '\n'
@@ -142,9 +149,9 @@ def train():
 
             # generate 400 chars
             for _ in range(100):
-                seed = np.zeros((1, length, input_len))
+                seed = np.zeros((1, sentence_length, input_len))
                 # format input
-                for t in range(0, length):
+                for t in range(0, sentence_length):
                     seed[0, t, sentence[t]] = 1
 
                 # get predictions
