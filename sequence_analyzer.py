@@ -6,6 +6,8 @@ with Long Short-Term Memory (LSTM) based on the python library Keras.
 Python and capable of running on top of either TensorFlow or Theano.""
                                                 ---- Keras (http://keras.io/)
 
+
+
 Author: Chang Liu (fluency03)
 Data: 2016-03-17
 """
@@ -24,7 +26,8 @@ class LogSequenceAnalyzer(object):
     """
     A log sequence analyzer.
     """
-    def __init__(self, length, input_len, hidden_len, output_len, return_sequence=True):
+    def __init__(self, length, input_len, hidden_len, output_len,
+                 return_sequence=True):
         self.length = length
         self.input_len = input_len
         self.hidden_len = hidden_len
@@ -38,12 +41,17 @@ class LogSequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer
         """
         # 2 layer LSTM with specified number of nodes in the hidden layer.
-        self.model.add(LSTM(self.hidden_len, return_sequences=self.return_sequence, input_shape=(self.length, self.input_len)))
+        self.model.add(LSTM(self.hidden_len,
+                            return_sequences=self.return_sequence,
+                            input_shape=(self.length, self.input_len)))
         self.model.add(Dropout(dropout))
+
         self.model.add(LSTM(self.hidden_len, return_sequences=False))
         self.model.add(Dropout(dropout))
+
         self.model.add(Dense(self.output_len))
         self.model.add(Activation('softmax'))
+
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
     @classmethod
@@ -62,7 +70,7 @@ def get_data():
     using 1-of-k encoding
     """
     # read file and convert ids of each line into array of numbers
-    with open( "sequence", 'r') as f:
+    with open("sequence", 'r') as f:
         sequence = [int(id_) for id_ in f]
 
     # number of template id types
@@ -107,6 +115,7 @@ def train():
     Trains using batch size of 100, 60 epochs total.
     """
     sequence, length, input_len, x, y = get_data()
+
     hidden_len = 512
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.5
     lstm = LogSequenceAnalyzer(length, input_len, hidden_len, input_len)
@@ -115,7 +124,7 @@ def train():
     lstm.build_lstm(dropout=0.2)
 
     # train model and output generated text
-    for iteration in range(1, 40):
+    for iteration in range(1, 41):
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
@@ -127,12 +136,12 @@ def train():
             sentence = sequence[start_index:start_index + length]
             # print sentence
             generated = sentence
-            print "With seed: " + ' '.join(str(s)
-                                                      for s in sentence) + '\n'
-            sys.stdout.write("Generated: " + ' '.join(str(g) for g in generated))
+            print "With seed: " + ' '.join(str(s) for s in sentence) + '\n'
+            sys.stdout.write("Generated: " + ' '.join(str(g)
+                                                      for g in generated))
 
             # generate 400 chars
-            for i in range(100):
+            for _ in range(100):
                 seed = np.zeros((1, length, input_len))
                 # format input
                 for t in range(0, length):
