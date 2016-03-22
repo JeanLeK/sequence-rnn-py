@@ -62,7 +62,7 @@ def get_data():
     using 1-of-k encoding
     """
     # read file and convert ids of each line into array of numbers
-    with open( "/home/cliu/Documents/SC-1/sequence", 'r') as f:
+    with open( "sequence", 'r') as f:
         sequence = [int(id_) for id_ in f]
 
     # number of template id types
@@ -78,6 +78,7 @@ def get_data():
     # list of the next id for each of the according sentence
     next_ids = []
 
+    # creat batch data and next id sequences
     for i in range(0, len(sequence) - length, step):
         sentences.append(sequence[i: i + length])
         next_ids.append(sequence[i + length])
@@ -106,30 +107,32 @@ def train():
     Trains using batch size of 100, 60 epochs total.
     """
     sequence, length, input_len, x, y = get_data()
+    hidden_len = 512
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.5
-    lstm = LogSequenceAnalyzer(length, input_len, 100, input_len)
+    lstm = LogSequenceAnalyzer(length, input_len, hidden_len, input_len)
     print "Building Model..."
     # IPython.embed()
     lstm.build_lstm(dropout=0.2)
 
     # train model and output generated text
-    for iteration in range(1, 60):
+    for iteration in range(1, 40):
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
-        lstm.model.fit(x, y, batch_size=100, nb_epoch=1)
+        lstm.model.fit(x, y, batch_size=128, nb_epoch=1)
 
         start_index = random.randint(0, len(sequence) - length - 1)
         for T in [0.2, 0.5, 1.0, 1.2]:
-            print("------------Temperature", T)
-            # generated = ''
+            print "------------Temperature: %.2f" %T
             sentence = sequence[start_index:start_index + length]
+            # print sentence
             generated = sentence
-            print "Generating with seed: " + ' '.join(str(s) for s in sentence)
-            sys.stdout.write(' '.join(str(g) for g in generated))
+            print "With seed: " + ' '.join(str(s)
+                                                      for s in sentence) + '\n'
+            sys.stdout.write("Generated: " + ' '.join(str(g) for g in generated))
 
             # generate 400 chars
-            for i in range(40):
+            for i in range(100):
                 seed = np.zeros((1, length, input_len))
                 # format input
                 for t in range(0, length):
@@ -138,15 +141,18 @@ def train():
                 # get predictions
                 # verbose = 0, no logging
                 predictions = lstm.model.predict(seed, verbose=0)[0]
+                # print "predictions length: %d" %len(predictions)
                 next_id = lstm.sample(predictions, T)
-                # print next char
-                sys.stdout.write(str(next_id))
+                # print predictions[next_id]
+                # print next id
+                sys.stdout.write(' ' + str(next_id))
                 sys.stdout.flush()
 
-                # use current output as input to predict the next character
-                # in the sequence
+                # use current output as input to predict the
+                # next id in the sequence
                 generated.append(next_id)
-                sentence = sentence[1:].append(next_id)
+                sentence.pop(0)
+                sentence.append(next_id)
 
             print ""
 
