@@ -22,9 +22,9 @@ import sys
 # from IPython import embed
 
 
-class LogSequenceAnalyzer(object):
+class IntSequenceAnalyzer(object):
     """
-    A log sequence analyzer.
+    A integer sequence analyzer.
     """
     def __init__(self, length, input_len, hidden_len, output_len,
                  return_sequence=True):
@@ -118,7 +118,7 @@ def train():
 
     hidden_len = 512
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.5
-    lstm = LogSequenceAnalyzer(length, input_len, hidden_len, input_len)
+    lstm = IntSequenceAnalyzer(length, input_len, hidden_len, input_len)
     print "Building Model..."
     # IPython.embed()
     lstm.build_lstm(dropout=0.2)
