@@ -1,4 +1,7 @@
 # sequence-rnn-py (undone)
+
+[![Build Status](https://travis-ci.org/fluency03/sequence-rnn-py.svg?branch=master)](https://travis-ci.org/fluency03/sequence-rnn-py)
+
 This program analyze the sequence using Recurrent Neural Network (RNN) with Long Short-Term Memory (LSTM) based on the python library [Keras](http://keras.io/).
 It is based on [this](https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py) text generation exampe of Keras.
 
