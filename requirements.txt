@@ -1,4 +1,4 @@
-numpy=1.12.0
-scipy=0.17.0
-theano=0.8.0
-keras=0.3.2
+numpy>=1.12.0
+scipy>=0.17.0
+theano>=0.8.0
+keras>=0.3.2
