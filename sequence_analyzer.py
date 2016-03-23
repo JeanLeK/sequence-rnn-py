@@ -1,25 +1,33 @@
 """
 This program analyze the integer sequence using Recurrent Neural Network (RNN)
-with Long Short-Term Memory (LSTM) based on the python library Keras.
+with Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) based on the
+python library Keras.
 
 "Keras is a minimalist, highly modular neural networks library, written in
-Python and capable of running on top of either TensorFlow or Theano.""
+ Python and capable of running on top of either TensorFlow or Theano."
+
                                                 ---- Keras (http://keras.io/)
 
+
+It is based on this Keras example - lstm_text_generation:
+https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
 
 
 Author: Chang Liu (fluency03)
 Data: 2016-03-17
 """
 
+# from keras import callbacks
 from keras.models import Sequential
 from keras.layers.core import Activation, Dense, Dropout
-from keras.layers.recurrent import LSTM
+from keras.layers.recurrent import LSTM, GRU
+# from keras.utils.visualize_util import plot
 import numpy as np
 import random
 import sys
 
 # from IPython import embed
+
 
 
 class IntSequenceAnalyzer(object):
@@ -48,6 +56,26 @@ class IntSequenceAnalyzer(object):
         self.model.add(Dropout(dropout))
 
         self.model.add(LSTM(self.hidden_len, return_sequences=False))
+        self.model.add(Dropout(dropout))
+
+        self.model.add(Dense(self.output_len))
+        self.model.add(Activation('softmax'))
+
+        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+    def build_gru(self, dropout=0.2):
+        """
+        Stacked GRU with specified dropout rate, a model built with
+        softmax activation, cross entropy loss and rmsprop optimizer
+        """
+        # 2 layer GRU with specified number of nodes in the hidden layer.
+        self.model.add(GRU(self.hidden_len,
+                           return_sequences=self.return_sequence,
+                           input_shape=(self.sentence_length,
+                                        self.input_len)))
+        self.model.add(Dropout(dropout))
+
+        self.model.add(GRU(self.hidden_len, return_sequences=False))
         self.model.add(Dropout(dropout))
 
         self.model.add(Dense(self.output_len))
@@ -123,19 +151,25 @@ def train():
     sequence, sentence_length, input_len, x, y = get_data()
 
     hidden_len = 512
-    # two layered LSTM 512 hidden nodes and a dropout rate of 0.5
-    lstm = IntSequenceAnalyzer(sentence_length,
-                               input_len, hidden_len, input_len)
+
+    # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
+    rnn = IntSequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
     print "Building Model..."
     # IPython.embed()
-    lstm.build_lstm(dropout=0.2)
+    rnn.build_lstm(dropout=0.2)
 
-    # train model and output generated text
+    # plot the model, need the following packages:
+    # pydot, graphviz, setuptools, pyparsing
+    # plot(rnn.model, to_file='rnn_model.png')
+
+    # remote = callbacks.RemoteMonitor(root='http://localhost:9000')
+
+    # train model and output generated sequence
     for iteration in range(1, 41):
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
-        lstm.model.fit(x, y, batch_size=128, nb_epoch=1)
+        rnn.model.fit(x, y, batch_size=128, nb_epoch=1, callbacks=[remote])
 
         start_index = random.randint(0, len(sequence) - sentence_length - 1)
         for T in [0.2, 0.5, 1.0, 1.2]:
@@ -156,9 +190,9 @@ def train():
 
                 # get predictions
                 # verbose = 0, no logging
-                predictions = lstm.model.predict(seed, verbose=0)[0]
+                predictions = rnn.model.predict(seed, verbose=0)[0]
                 # print "predictions length: %d" %len(predictions)
-                next_id = lstm.sample(predictions, T)
+                next_id = rnn.sample(predictions, T)
                 # print predictions[next_id]
                 # print next id
                 sys.stdout.write(' ' + str(next_id))
