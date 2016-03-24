@@ -169,7 +169,7 @@ def train():
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
-        rnn.model.fit(x, y, batch_size=128, nb_epoch=1, callbacks=[remote])
+        rnn.model.fit(x, y, batch_size=128, nb_epoch=1)
 
         start_index = random.randint(0, len(sequence) - sentence_length - 1)
         for T in [0.2, 0.5, 1.0, 1.2]:
