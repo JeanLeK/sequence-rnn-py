@@ -17,7 +17,6 @@ Author: Chang Liu (fluency03)
 Data: 2016-03-17
 """
 
-# from keras import callbacks
 from keras.models import Sequential
 from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
@@ -99,19 +98,20 @@ def get_data():
     using 1-of-k encoding
     """
     # read file and convert ids of each line into array of numbers
-    with open("sequence", 'r') as f:
+    with open("train_data", 'r') as f:
         sequence = [int(id_) for id_ in f]
 
     # vocabulary of the input sequence
     vocab = set(sequence)
     # add 0, representing
     vocab.add(0)
+    vocab.add(len(vocab))
 
     # number of template id types
     vocab_size = len(vocab)
 
     # length of one sentence
-    sentence_length = 20
+    sentence_length = 40
     # sample step per sentence
     step = 3
 
@@ -121,6 +121,10 @@ def get_data():
     next_ids = []
 
     # creat batch data and next id sequences
+    for i in range(0, sentence_length, step):
+        sentences.append([0 for _ in range(0, sentence_length - i)] +
+                          sequence[0: i])
+        next_ids.append(sequence[i])
     for i in range(0, len(sequence) - sentence_length, step):
         sentences.append(sequence[i: i + sentence_length])
         next_ids.append(sequence[i + sentence_length])
@@ -158,18 +162,21 @@ def train():
     # IPython.embed()
     rnn.build_lstm(dropout=0.2)
 
+    # training, validation testing loss
+    train_loss = []
+    validation_loss = []
+    test_loss = []
+
     # plot the model, need the following packages:
     # pydot, graphviz, setuptools, pyparsing
     # plot(rnn.model, to_file='rnn_model.png')
-
-    # remote = callbacks.RemoteMonitor(root='http://localhost:9000')
 
     # train model and output generated sequence
     for iteration in range(1, 41):
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
-        rnn.model.fit(x, y, batch_size=128, nb_epoch=1)
+        train_loss.append(rnn.model.fit(x, y, batch_size=128, nb_epoch=1))
 
         start_index = random.randint(0, len(sequence) - sentence_length - 1)
         for T in [0.2, 0.5, 1.0, 1.2]:
@@ -205,6 +212,9 @@ def train():
                 sentence.append(next_id)
 
             print ""
+
+        print "Training loss:"
+        print train_loss
 
 
 if __name__ == '__main__':
