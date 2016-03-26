@@ -91,15 +91,30 @@ class IntSequenceAnalyzer(object):
         return np.argmax(np.random.multinomial(1, prob, 1))
 
 
+
 class LossHistory(Callback):
     """
-    Record the loss history
+    Record the loss and accuracy history
     """
     def on_train_begin(self, logs={}):
         self.losses = []
+        # training loss and accuracy
+        self.train_losses = []
+        self.train_acc = []
+        # validation loss and accuracy
+        self.val_losses = []
+        self.val_acc = []
 
     def on_batch_end(self, batch, logs={}):
         self.losses.append(logs.get('loss'))
+
+    def on_epoch_end(self, epoch, logs={}):
+        # record training loss and accuracy
+        self.train_losses.append(logs.get('loss'))
+        self.train_acc.append(logs.get('acc'))
+        # record validation loss and accuracy
+        self.val_losses.append(logs.get('val_loss'))
+        self.val_acc.append(logs.get('val_acc'))
 
 
 
@@ -114,8 +129,9 @@ def get_data():
 
     # vocabulary of the input sequence
     vocab = set(sequence)
-    # add 0, representing
+    # add 0, representing 'no-log'
     vocab.add(0)
+    # add another vocab, representing 'unknown-log'
     vocab.add(len(vocab))
 
     # number of template id types
@@ -158,6 +174,23 @@ def get_data():
     return sequence, sentence_length, vocab_size, x, y
 
 
+
+def print_losses(history):
+    # print the losses and accuracy of training
+    print "losses and accuracy of Training: "
+    train_losses = history.train_losses
+    train_acc = history.train_acc
+    for l, a in zip(train_losses, train_acc):
+        print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+
+    # print the losses and accuracy of validation
+    print "losses and accuracy of Validation: "
+    val_losses = history.val_losses
+    val_acc = history.val_acc
+    for l, a in zip(val_losses, val_acc):
+        print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+
+
 def train():
     """
     Trains the network and outputs the generated text.
@@ -186,7 +219,7 @@ def train():
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
 
-        # history of loss
+        # history of losses and accuracy
         history = LossHistory()
 
         # saves the model weights after each epoch
@@ -234,8 +267,8 @@ def train():
 
             print ""
 
-        # print the losses
-        print history.losses
+        # print the losses and accuracy
+        print_losses(history)
 
 
 if __name__ == '__main__':
