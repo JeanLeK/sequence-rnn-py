@@ -17,6 +17,7 @@ Author: Chang Liu (fluency03)
 Data: 2016-03-17
 """
 
+from keras.callbacks import Callback, ModelCheckpoint
 from keras.models import Sequential
 from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
@@ -24,8 +25,6 @@ from keras.layers.recurrent import LSTM, GRU
 import numpy as np
 import random
 import sys
-
-# from IPython import embed
 
 
 
@@ -90,6 +89,18 @@ class IntSequenceAnalyzer(object):
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
         return np.argmax(np.random.multinomial(1, prob, 1))
+
+
+class LossHistory(Callback):
+    """
+    Record the loss history
+    """
+    def on_train_begin(self, logs={}):
+        self.losses = []
+
+    def on_batch_end(self, batch, logs={}):
+        self.losses.append(logs.get('loss'))
+
 
 
 def get_data():
@@ -162,10 +173,8 @@ def train():
     # IPython.embed()
     rnn.build_lstm(dropout=0.2)
 
-    # training, validation testing loss
-    train_loss = []
-    validation_loss = []
-    test_loss = []
+    # save the model weight into a file
+    # rnn.model.save_weights('my_model_weights.h5')
 
     # plot the model, need the following packages:
     # pydot, graphviz, setuptools, pyparsing
@@ -176,7 +185,19 @@ def train():
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
-        train_loss.append(rnn.model.fit(x, y, batch_size=128, nb_epoch=1))
+
+        # history of loss
+        history = LossHistory()
+
+        # saves the model weights after each epoch
+        # if the validation loss decreased
+        checkpointer = ModelCheckpoint(filepath="weights.hdf5",
+                                       verbose=1, save_best_only=True)
+
+        # train the model
+        rnn.model.fit(x, y, batch_size=128, nb_epoch=1, validation_split=0.1,
+                      show_accuracy=True, verbose=1,
+                      callbacks=[history, checkpointer])
 
         start_index = random.randint(0, len(sequence) - sentence_length - 1)
         for T in [0.2, 0.5, 1.0, 1.2]:
@@ -197,7 +218,7 @@ def train():
 
                 # get predictions
                 # verbose = 0, no logging
-                predictions = rnn.model.predict(seed, verbose=0)[0]
+                predictions = rnn.model.predict(seed, verbose=1)[0]
                 # print "predictions length: %d" %len(predictions)
                 next_id = rnn.sample(predictions, T)
                 # print predictions[next_id]
@@ -213,8 +234,8 @@ def train():
 
             print ""
 
-        print "Training loss:"
-        print train_loss
+        # print the losses
+        print history.losses
 
 
 if __name__ == '__main__':
