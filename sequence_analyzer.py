@@ -28,7 +28,7 @@ import sys
 
 
 
-class IntSequenceAnalyzer(object):
+class SequenceAnalyzer(object):
     """
     A integer sequence analyzer.
     """
@@ -201,7 +201,7 @@ def train():
     hidden_len = 512
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
-    rnn = IntSequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
+    rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
     print "Building Model..."
     # IPython.embed()
     rnn.build_lstm(dropout=0.2)
