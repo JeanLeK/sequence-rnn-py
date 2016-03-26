@@ -46,9 +46,7 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 
 
 
-## Training
-
-### TODO (considerations)
+## Training (TODO: considerations)
 
 - sentence length
 - batch size
