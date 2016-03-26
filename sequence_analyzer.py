@@ -17,6 +17,7 @@ Author: Chang Liu (fluency03)
 Data: 2016-03-17
 """
 
+
 from keras.callbacks import Callback, ModelCheckpoint
 from keras.models import Sequential
 from keras.layers.core import Activation, Dense, Dropout
@@ -25,7 +26,6 @@ from keras.layers.recurrent import LSTM, GRU
 import numpy as np
 import random
 import sys
-
 
 
 class SequenceAnalyzer(object):
@@ -97,7 +97,7 @@ class LossHistory(Callback):
     Record the loss and accuracy history
     """
     def on_train_begin(self, logs={}):
-        self.losses = []
+        # self.losses = []
         # training loss and accuracy
         self.train_losses = []
         self.train_acc = []
@@ -105,8 +105,8 @@ class LossHistory(Callback):
         self.val_losses = []
         self.val_acc = []
 
-    def on_batch_end(self, batch, logs={}):
-        self.losses.append(logs.get('loss'))
+    # def on_batch_end(self, batch, logs={}):
+        # self.losses.append(logs.get('loss'))
 
     def on_epoch_end(self, epoch, logs={}):
         # record training loss and accuracy
@@ -196,14 +196,16 @@ def train():
     Trains the network and outputs the generated text.
     Trains using batch size of 100, 60 epochs total.
     """
+    # get parameters and dimensions of the model
     sequence, sentence_length, input_len, x, y = get_data()
 
+    # the size of each hidden layer
     hidden_len = 512
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
+
     print "Building Model..."
-    # IPython.embed()
     rnn.build_lstm(dropout=0.2)
 
     # save the model weight into a file
@@ -213,8 +215,9 @@ def train():
     # pydot, graphviz, setuptools, pyparsing
     # plot(rnn.model, to_file='rnn_model.png')
 
+    nb_iterations = 40
     # train model and output generated sequence
-    for iteration in range(1, 41):
+    for iteration in range(1, nb_iterations+1):
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
@@ -232,8 +235,14 @@ def train():
                       show_accuracy=True, verbose=1,
                       callbacks=[history, checkpointer])
 
+        # start index of the seed, random number in range
         start_index = random.randint(0, len(sequence) - sentence_length - 1)
-        for T in [0.2, 0.5, 1.0, 1.2]:
+
+        # the Temperature option list
+        t_list = [0.2, 0.5]
+
+        # predict
+        for T in t_list:
             print "------------Temperature: %.2f" %T
             sentence = sequence[start_index:start_index + sentence_length]
             # print sentence
@@ -242,7 +251,7 @@ def train():
             sys.stdout.write("Generated: " + ' '.join(str(g)
                                                       for g in generated))
 
-            # generate 400 chars
+            # generate 100 elements
             for _ in range(100):
                 seed = np.zeros((1, sentence_length, input_len))
                 # format input
@@ -264,7 +273,6 @@ def train():
                 generated.append(next_id)
                 sentence.pop(0)
                 sentence.append(next_id)
-
             print ""
 
         # print the losses and accuracy
