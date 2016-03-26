@@ -22,7 +22,7 @@ from keras.callbacks import Callback, ModelCheckpoint
 from keras.models import Sequential
 from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
-# from keras.utils.visualize_util import plot
+from keras.utils.visualize_util import plot
 import numpy as np
 import random
 import sys
