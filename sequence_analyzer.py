@@ -177,14 +177,14 @@ def get_data():
 
 def print_losses(history):
     # print the losses and accuracy of training
-    print "losses and accuracy of Training: "
+    print "Training: "
     train_losses = history.train_losses
     train_acc = history.train_acc
     for l, a in zip(train_losses, train_acc):
         print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
 
     # print the losses and accuracy of validation
-    print "losses and accuracy of Validation: "
+    print "Validation: "
     val_losses = history.val_losses
     val_acc = history.val_acc
     for l, a in zip(val_losses, val_acc):
@@ -260,7 +260,7 @@ def train():
 
                 # get predictions
                 # verbose = 0, no logging
-                predictions = rnn.model.predict(seed, verbose=1)[0]
+                predictions = rnn.model.predict(seed, verbose=0)[0]
                 # print "predictions length: %d" %len(predictions)
                 next_id = rnn.sample(predictions, T)
                 # print predictions[next_id]
@@ -273,7 +273,7 @@ def train():
                 generated.append(next_id)
                 sentence.pop(0)
                 sentence.append(next_id)
-            print ""
+            print "\n"
 
         # print the losses and accuracy
         print_losses(history)
