@@ -17,15 +17,15 @@ Author: Chang Liu (fluency03)
 Data: 2016-03-17
 """
 
+import sys
+import random
+import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
 from keras.models import Sequential
 from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
 from keras.utils.visualize_util import plot
-import numpy as np
-import random
-import sys
 
 
 class SequenceAnalyzer(object):
@@ -82,12 +82,16 @@ class SequenceAnalyzer(object):
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
     def save_model(self):
-        # save the model weight into a file
+        """
+        Save the model weight into a file
+        """
         self.model.save_weights('rnn_model_weights.h5')
 
     def plot_model(self):
-        # plot the model, need the following packages:
-        # pydot, graphviz, setuptools, pyparsing
+        """
+        Plot the model, need the following packages:
+        pydot, graphviz, setuptools, pyparsing
+        """
         plot(self.model, to_file='rnn_model.png')
 
     @classmethod
@@ -159,7 +163,7 @@ def get_data():
     # creat batch data and next id sequences
     for i in range(0, sentence_length, step):
         sentences.append([0 for _ in range(0, sentence_length - i)] +
-                          sequence[0: i])
+                         sequence[0: i])
         next_ids.append(sequence[i])
     for i in range(0, len(sequence) - sentence_length, step):
         sentences.append(sequence[i: i + sentence_length])
@@ -185,6 +189,9 @@ def get_data():
 
 
 def print_losses(history):
+    """
+    Print the loss and accuracy
+    """
     # print the losses and accuracy of training
     print "Training: "
     train_losses = history.train_losses
