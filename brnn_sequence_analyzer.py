@@ -19,6 +19,7 @@ Data: 2016-03-26
 import sys
 import numpy as np
 
+from keras.callbacks import Callback, ModelCheckpoint
 from keras.layers.core import Dense, Dropout
 from keras.layers.recurrent import LSTM
 from keras.models import Graph
@@ -46,7 +47,8 @@ class SequenceAnalyzer(object):
     def build_lstm(self, dropout=0.2):
         """
         Bidirectional LSTM with specified dropout rate, a model built with
-        softmax activation, cross entropy loss and rmsprop optimizer
+        softmax activation, cross entropy loss and rmsprop optimizer.
+        Two RNN LSTMs stacked on top of each other.
         """
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
@@ -85,6 +87,31 @@ class SequenceAnalyzer(object):
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
         return np.argmax(np.random.multinomial(1, prob, 1))
+
+
+class History(Callback):
+    """
+    Record the loss and accuracy history
+    """
+    def on_train_begin(self, logs={}):
+        # self.losses = []
+        # training loss and accuracy
+        self.train_losses = []
+        self.train_acc = []
+        # validation loss and accuracy
+        self.val_losses = []
+        self.val_acc = []
+
+    # def on_batch_end(self, batch, logs={}):
+        # self.losses.append(logs.get('loss'))
+
+    def on_epoch_end(self, epoch, logs={}):
+        # record training loss and accuracy
+        self.train_losses.append(logs.get('loss'))
+        self.train_acc.append(logs.get('acc'))
+        # record validation loss and accuracy
+        self.val_losses.append(logs.get('val_loss'))
+        self.val_acc.append(logs.get('val_acc'))
 
 
 def get_data():
@@ -143,22 +170,28 @@ def get_data():
     return sequence, sentence_length, vocab_size, x, y
 
 
+def train():
+    """
+    Trains the network and outputs the generated text.
+    Trains using batch size of 128, 60 epochs total.
+    """
+    print "Loading data..."
+    sequence, sentence_length, input_len, X_train, y_train = get_data()
 
-print "Loading data..."
-sequence, sentence_length, input_len, X_train, y_train = get_data()
+    # the size of each hidden layer
+    hidden_len = 512
+
+    # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
+    brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
+
+    print "Building Model..."
+    brnn.build_lstm(dropout=0.2)
+
+    print "Train..."
+    brnn.model.fit({'input': X_train, 'output': y_train}, validation_split=0.1,
+                   verbose=1, batch_size=128, nb_epoch=1, show_accuracy=True)
 
 
-# the size of each hidden layer
-hidden_len = 512
 
-# two layered LSTM 512 hidden nodes and a dropout rate of 0.2
-brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
-
-
-print "Building Model..."
-brnn.build_lstm(dropout=0.2)
-
-
-print "Train..."
-brnn.model.fit({'input': X_train, 'output': y_train}, validation_split=0.1,
-               verbose=1, batch_size=128, nb_epoch=1, show_accuracy=True)
+if __name__ == '__main__':
+    train()
