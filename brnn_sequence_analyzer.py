@@ -8,7 +8,6 @@ based on the python library Keras.
 
                                                 ---- Keras (http://keras.io/)
 
-
 It is based on this Keras example - imdb_bidirectional_lstm.py:
 https://github.com/fchollet/keras/blob/master/examples/imdb_bidirectional_lstm.py
 
@@ -29,7 +28,6 @@ from keras.utils.visualize_util import plot
 
 # random number generator with a fixed value for reproducibility
 np.random.seed(1337)
-
 
 
 class SequenceAnalyzer(object):
@@ -226,7 +224,7 @@ def train():
         # saves the model weights after each epoch
         # if the validation loss decreased
         checkpointer = ModelCheckpoint(filepath="weights.hdf5",
-                                      verbose=1, save_best_only=True)
+                                       verbose=1, save_best_only=True)
 
         # train the model
         brnn.model.fit({'input': X_train, 'output': y_train}, batch_size=128,
@@ -247,7 +245,7 @@ def train():
             generated = sentence
             print "With seed: " + ' '.join(str(s) for s in sentence) + '\n'
             sys.stdout.write("Generated: " + ' '.join(str(g)
-                                                     for g in generated))
+                                                      for g in generated))
 
             # generate 100 elements
             for _ in range(100):
