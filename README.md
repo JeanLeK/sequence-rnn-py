@@ -38,14 +38,9 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 
 ## Model
 
-<div style="text-align:center" markdown="1">
+![ RNN LSTM ](https://github.com/fluency03/sequence-rnn-py/blob/master/rnn_model.png "RNN LSTM")
 
-![RNN LSTM](https://github.com/fluency03/sequence-rnn-py/blob/master/rnn_model.png "RNN LSTM")
-
-![BRNN LSTM](https://github.com/fluency03/sequence-rnn-py/blob/master/brnn_model.png "BRNN LSTM")
-
-</div>
-
+![ BRNN LSTM ](https://github.com/fluency03/sequence-rnn-py/blob/master/brnn_model.png "BRNN LSTM")
 
 
 ## Data
