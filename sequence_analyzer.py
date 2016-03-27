@@ -20,13 +20,15 @@ import random
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.models import Sequential
 from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
+from keras.models import Sequential
 from keras.utils.visualize_util import plot
+
 
 # random number generator with a fixed value for reproducibility
 np.random.seed(1337)
+
 
 class SequenceAnalyzer(object):
     """
