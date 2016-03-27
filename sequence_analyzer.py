@@ -30,7 +30,7 @@ import sys
 
 class SequenceAnalyzer(object):
     """
-    A integer sequence analyzer.
+    A integer sequence analyzer. RNN Sequential Model.
     """
     def __init__(self, sentence_length, input_len, hidden_len, output_len,
                  return_sequence=True):
@@ -80,6 +80,15 @@ class SequenceAnalyzer(object):
         self.model.add(Activation('softmax'))
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+    def save_model(self):
+        # save the model weight into a file
+        self.model.save_weights('rnn_model_weights.h5')
+
+    def plot_model(self):
+        # plot the model, need the following packages:
+        # pydot, graphviz, setuptools, pyparsing
+        plot(self.model, to_file='rnn_model.png')
 
     @classmethod
     def sample(cls, prob, temperature=1.0):
@@ -197,6 +206,7 @@ def train():
     Trains using batch size of 100, 60 epochs total.
     """
     # get parameters and dimensions of the model
+    print "Loading data..."
     sequence, sentence_length, input_len, x, y = get_data()
 
     # the size of each hidden layer
@@ -207,13 +217,6 @@ def train():
 
     print "Building Model..."
     rnn.build_lstm(dropout=0.2)
-
-    # save the model weight into a file
-    # rnn.model.save_weights('my_model_weights.h5')
-
-    # plot the model, need the following packages:
-    # pydot, graphviz, setuptools, pyparsing
-    # plot(rnn.model, to_file='rnn_model.png')
 
     nb_iterations = 40
     # train model and output generated sequence
