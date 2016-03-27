@@ -157,7 +157,7 @@ brnn.build_lstm(dropout=0.2)
 
 print "Train..."
 brnn.model.fit({'input': X_train, 'output': y_train}, validation_split=0.1,
-               verbose=1, batch_size=128, nb_epoch=1)
+               verbose=1, batch_size=128, nb_epoch=1, show_accuracy=True)
 
 
 # acc = accuracy(
