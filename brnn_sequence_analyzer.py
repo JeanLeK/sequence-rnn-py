@@ -21,7 +21,7 @@ import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
 from keras.layers.core import Dense, Dropout
-from keras.layers.recurrent import LSTM
+from keras.layers.recurrent import LSTM, GRU
 from keras.models import Graph
 from keras.utils.visualize_util import plot
 
@@ -54,6 +54,28 @@ class SequenceAnalyzer(object):
         self.model.add_node(LSTM(self.hidden_len),
                             name='forward', input='input')
         self.model.add_node(LSTM(self.hidden_len, go_backwards=True),
+                            name='backward', input='input')
+        self.model.add_node(Dropout(dropout), name='dropout',
+                            inputs=['forward', 'backward'])
+        self.model.add_node(Dense(self.output_len, activation='softmax'),
+                            name='softmax', input='dropout')
+        self.model.add_output(name='output', input='softmax')
+
+        # try using different optimizers and different optimizer configs
+        self.model.compile(loss={'output': 'categorical_crossentropy'},
+                           optimizer='rmsprop')
+
+    def build_gru(self, dropout=0.2):
+        """
+        Bidirectional GRU with specified dropout rate, a model built with
+        softmax activation, cross entropy loss and rmsprop optimizer.
+        Two RNN GRUs stacked on top of each other.
+        """
+        self.model.add_input(input_shape=(self.sentence_length, self.input_len),
+                             name='input', dtype='float')
+        self.model.add_node(GRU(self.hidden_len),
+                            name='forward', input='input')
+        self.model.add_node(GRU(self.hidden_len, go_backwards=True),
                             name='backward', input='input')
         self.model.add_node(Dropout(dropout), name='dropout',
                             inputs=['forward', 'backward'])
