@@ -86,15 +86,15 @@ class SequenceAnalyzer(object):
 
 
 
-class RNN(SequenceAnalyzer):
+class URNN(SequenceAnalyzer):
     """
-    RNN model of the sequence analyzer. Sequential Model.
+    Uni-directional RNN model of the sequence analyzer. Sequential Model.
     """
     def __init__(self, sentence_length, input_len, hidden_len, output_len,
                  return_sequence=True):
-        super(RNN, self).__init__(sentence_length, input_len,
-                                  hidden_len, output_len,
-                                  return_sequence=return_sequence)
+        super(URNN, self).__init__(sentence_length, input_len,
+                                   hidden_len, output_len,
+                                   return_sequence=return_sequence)
         self.model = Sequential()
 
     def build_lstm(self, dropout=0.2):
@@ -141,20 +141,20 @@ class RNN(SequenceAnalyzer):
         """
         Save the model weight into a hdf5 file
         """
-        super(RNN, self).save_model('rnn_model_weights.h5')
+        super(URNN, self).save_model('rnn_model_weights.h5')
 
     def plot_model(self):
         """
         Plot the model, need the following packages:
         pydot, graphviz, setuptools, pyparsing
         """
-        super(RNN, self).plot_model('rnn_model.png')
+        super(URNN, self).plot_model('rnn_model.png')
 
 
 
 class BRNN(SequenceAnalyzer):
     """
-    BRNN model of the sequence analyzer. Graph Model.
+    Bi-directional RNN model of the sequence analyzer. Graph Model.
     """
     def __init__(self, sentence_length, input_len, hidden_len, output_len,
                  return_sequence=True):
@@ -246,8 +246,7 @@ class History(Callback):
 
 def get_data():
     """
-    retrieves data from a plain txt file and formats it
-    using 1-of-k encoding
+    Retrieves data from a plain txt file and formats it using one-hot vector
     """
     # read file and convert ids of each line into array of numbers
     with open("train_data", 'r') as f:
@@ -320,10 +319,14 @@ def print_losses(history):
         print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
 
 
-def train(model='rnn'):
+def train(model='urnn'):
     """
     Trains the network and outputs the generated new sequence.
-    Trains using batch size of 128, 60 epochs total.
+
+    Argument:
+        model: Specify the model type, i.e.,
+            urnn - Uni-directional RNN
+            brnn - Bi-directional RNN
     """
     # get parameters and dimensions of the model
     print "Loading data..."
@@ -332,9 +335,10 @@ def train(model='rnn'):
     # the size of each hidden layer
     hidden_len = 512
 
-    if model == 'rnn':
+    # check model type: urnn or brnn
+    if model == 'urnn':
         # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
-        analyzer = RNN(sentence_length, input_len, hidden_len, input_len)
+        analyzer = URNN(sentence_length, input_len, hidden_len, input_len)
     elif model == 'brnn':
         # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
         # forward and backward
@@ -344,6 +348,7 @@ def train(model='rnn'):
     print "Building Model..."
     analyzer.build_lstm(dropout=0.2)
 
+    # number of iterations
     nb_iterations = 40
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
