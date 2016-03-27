@@ -1,15 +1,18 @@
 """
 This program analyze the integer sequence using Recurrent Neural Network (RNN)
-with Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) based on the
-python library Keras.
+(Uni-directional and Bi-directional) with Long Short-Term Memory (LSTM) and
+Gated Recurrent Unit (GRU) based on the python library Keras.
 
 "Keras is a minimalist, highly modular neural networks library, written in
  Python and capable of running on top of either TensorFlow or Theano."
 
                                                 ---- Keras (http://keras.io/)
 
-It is based on this Keras example - lstm_text_generation:
+Uni-directional model is based on the Keras example - lstm_text_generation:
 https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
+
+Bi-directional model is based on the Keras example - imdb_bidirectional_lstm.py:
+https://github.com/fchollet/keras/blob/master/examples/imdb_bidirectional_lstm.py
 
 Author: Chang Liu (fluency03)
 Data: 2016-03-17
