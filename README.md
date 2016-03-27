@@ -15,7 +15,7 @@ It is based on this [lstm_text_generation.py](https://github.com/fchollet/keras/
 - [Theano](http://deeplearning.net/software/theano/): A Python library that allows you to define, optimize, and evaluate mathematical expressions involving multi-dimensional arrays efficiently.
 - [Tensorflow](https://www.tensorflow.org/): An open source software library for numerical computation using data flow graphs.
 - [Keras](http://keras.io/): A minimalist, highly modular neural networks library, written in Python and capable of running on top of either TensorFlow or Theano.
-- **GPU Support** (Optional but highly recommended). Instructions of enabling GPU are here: [for Theano](http://deeplearning.net/software/theano/install.html#using-the-gpu) and [for TensorFlow](https://www.tensorflow.org/versions/r0.7/get_started/os_setup.html#optional-linux-enable-gpu-support).
+- **GPU Support** (optional but highly recommended). Instructions of enabling GPU are here: [for Theano](http://deeplearning.net/software/theano/install.html#using-the-gpu) and [for TensorFlow](https://www.tensorflow.org/versions/r0.7/get_started/os_setup.html#optional-linux-enable-gpu-support).
 - [pydot](https://github.com/erocarrera/pydot) and [graphviz](http://www.graphviz.org/) (optional, if you want to plot the model)
 - [HDF5](https://www.hdfgroup.org/HDF5/) and [h5py](http://www.h5py.org/) (optional, required if you use model saving/loading functions)
 
