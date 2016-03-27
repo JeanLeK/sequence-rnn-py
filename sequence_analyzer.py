@@ -209,8 +209,8 @@ def print_losses(history):
 
 def train():
     """
-    Trains the network and outputs the generated text.
-    Trains using batch size of 100, 60 epochs total.
+    Trains the network and outputs the generated new sequence.
+    Trains using batch size of 128, 60 epochs total.
     """
     # get parameters and dimensions of the model
     print "Loading data..."
