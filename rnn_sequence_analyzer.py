@@ -32,7 +32,7 @@ np.random.seed(1337)
 
 class SequenceAnalyzer(object):
     """
-    A integer sequence analyzer. RNN Sequential Model.
+    An integer sequence analyzer. RNN Sequential Model.
     """
     def __init__(self, sentence_length, input_len, hidden_len, output_len,
                  return_sequence=True):
