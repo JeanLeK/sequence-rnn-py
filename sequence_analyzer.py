@@ -15,7 +15,7 @@ Bi-directional model is based on the Keras example - imdb_bidirectional_lstm.py:
 https://github.com/fchollet/keras/blob/master/examples/imdb_bidirectional_lstm.py
 
 Author: Chang Liu (fluency03)
-Data: 2016-03-17
+Data: 2016-03-27
 """
 
 import sys
