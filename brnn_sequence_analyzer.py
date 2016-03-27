@@ -32,7 +32,7 @@ np.random.seed(1337)
 
 class SequenceAnalyzer(object):
     """
-    A integer sequence analyzer. RNN Graph model.
+    An integer sequence analyzer. RNN Graph model.
     """
     def __init__(self, sentence_length, input_len, hidden_len, output_len,
                  return_sequence=True):
@@ -222,6 +222,7 @@ def train():
     hidden_len = 512
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
+    # forward and backward
     brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     print "Building Model..."
