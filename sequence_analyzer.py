@@ -105,7 +105,7 @@ class SequenceAnalyzer(object):
 
 
 
-class LossHistory(Callback):
+class History(Callback):
     """
     Record the loss and accuracy history
     """
@@ -233,7 +233,7 @@ def train():
         print "Iteration: ", iteration
 
         # history of losses and accuracy
-        history = LossHistory()
+        history = History()
 
         # saves the model weights after each epoch
         # if the validation loss decreased
