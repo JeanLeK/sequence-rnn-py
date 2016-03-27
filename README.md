@@ -38,8 +38,12 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 
 ## Model
 
+
+Two layers of LSTMs RNN model:
 ![ RNN LSTM ](https://github.com/fluency03/sequence-rnn-py/blob/master/rnn_model.png "RNN LSTM")
 
+
+One layer of LSTM Bi-Directional RNN model:
 ![ BRNN LSTM ](https://github.com/fluency03/sequence-rnn-py/blob/master/brnn_model.png "BRNN LSTM")
 
 
