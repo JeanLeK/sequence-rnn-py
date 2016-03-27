@@ -8,10 +8,8 @@ python library Keras.
 
                                                 ---- Keras (http://keras.io/)
 
-
 It is based on this Keras example - lstm_text_generation:
 https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
-
 
 Author: Chang Liu (fluency03)
 Data: 2016-03-17
@@ -27,6 +25,8 @@ from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
 from keras.utils.visualize_util import plot
 
+# random number generator with a fixed value for reproducibility
+np.random.seed(1337)
 
 class SequenceAnalyzer(object):
     """
