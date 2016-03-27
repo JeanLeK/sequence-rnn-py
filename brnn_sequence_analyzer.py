@@ -17,6 +17,7 @@ Data: 2016-03-26
 """
 
 import sys
+import random
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
@@ -170,6 +171,25 @@ def get_data():
     return sequence, sentence_length, vocab_size, x, y
 
 
+def print_losses(history):
+    """
+    Print the loss and accuracy
+    """
+    # print the losses and accuracy of training
+    print "Training: "
+    train_losses = history.train_losses
+    train_acc = history.train_acc
+    for l, a in zip(train_losses, train_acc):
+        print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+
+    # print the losses and accuracy of validation
+    print "Validation: "
+    val_losses = history.val_losses
+    val_acc = history.val_acc
+    for l, a in zip(val_losses, val_acc):
+        print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+
+
 def train():
     """
     Trains the network and outputs the generated text.
@@ -191,6 +211,70 @@ def train():
     brnn.model.fit({'input': X_train, 'output': y_train}, validation_split=0.1,
                    verbose=1, batch_size=128, nb_epoch=1, show_accuracy=True)
 
+    # ------------------------------------------------------------------------ #
+
+    nb_iterations = 40
+    # train model and output generated sequence
+    for iteration in range(1, nb_iterations+1):
+        print ""
+        print "------------------------ Start Training ------------------------"
+        print "Iteration: ", iteration
+
+        # history of losses and accuracy
+        history = History()
+
+        # saves the model weights after each epoch
+        # if the validation loss decreased
+        checkpointer = ModelCheckpoint(filepath="weights.hdf5",
+                                      verbose=1, save_best_only=True)
+
+        # train the model
+        brnn.model.fit({'input': X_train, 'output': y_train}, batch_size=128,
+                       nb_epoch=1, verbose=1, callbacks=[history, checkpointer],
+                       validation_split=0.1, show_accuracy=True)
+
+        # start index of the seed, random number in range
+        start_index = random.randint(0, len(sequence) - sentence_length - 1)
+
+        # the Temperature option list
+        t_list = [0.2, 0.5]
+
+        # predict
+        for T in t_list:
+            print "------------Temperature: %.2f" %T
+            sentence = sequence[start_index:start_index + sentence_length]
+            # print sentence
+            generated = sentence
+            print "With seed: " + ' '.join(str(s) for s in sentence) + '\n'
+            sys.stdout.write("Generated: " + ' '.join(str(g)
+                                                     for g in generated))
+
+            # generate 100 elements
+            for _ in range(100):
+                seed = np.zeros((1, sentence_length, input_len))
+                # format input
+                for t in range(0, sentence_length):
+                    seed[0, t, sentence[t]] = 1
+
+                # get predictions
+                # verbose = 0, no logging
+                predictions = brnn.model.predict(seed, verbose=0)[0]
+                # print "predictions length: %d" %len(predictions)
+                next_id = brnn.sample(predictions, T)
+                # print predictions[next_id]
+                # print next id
+                sys.stdout.write(' ' + str(next_id))
+                sys.stdout.flush()
+
+                # use current output as input to predict the
+                # next id in the sequence
+                generated.append(next_id)
+                sentence.pop(0)
+                sentence.append(next_id)
+            print "\n"
+
+        # print the losses and accuracy
+        print_losses(history)
 
 
 if __name__ == '__main__':
