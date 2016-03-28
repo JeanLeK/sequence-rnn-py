@@ -1,11 +1,10 @@
 """
-This program analyze the integer sequence using Recurrent Neural Network (RNN)
-with Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) based on the
-python library Keras.
+This program analyze the integer sequence using Uni-diractional Recurrent Neural
+Network (RNN) with Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU)
+based on the python library Keras.
 
 "Keras is a minimalist, highly modular neural networks library, written in
  Python and capable of running on top of either TensorFlow or Theano."
-
                                                 ---- Keras (http://keras.io/)
 
 It is based on this Keras example - lstm_text_generation:
@@ -32,25 +31,22 @@ np.random.seed(1337)
 
 class SequenceAnalyzer(object):
     """
-    An integer sequence analyzer. RNN Sequential Model.
+    Sequence analyzer based on RNN Sequential Model.
     """
-    def __init__(self, sentence_length, input_len, hidden_len, output_len,
-                 return_sequence=True):
+    def __init__(self, sentence_length, input_len, hidden_len, output_len):
         self.sentence_length = sentence_length
         self.input_len = input_len
         self.hidden_len = hidden_len
         self.output_len = output_len
-        self.return_sequence = return_sequence
         self.model = Sequential()
 
     def build_lstm(self, dropout=0.2):
         """
-        Stacked LSTM with specified dropout rate, a model built with
-        softmax activation, cross entropy loss and rmsprop optimizer
+        Stacked LSTM with specified dropout rate (default 0.2), built with
+        softmax activation, cross entropy loss and rmsprop optimizer.
         """
         # 2 layer LSTM with specified number of nodes in the hidden layer.
-        self.model.add(LSTM(self.hidden_len,
-                            return_sequences=self.return_sequence,
+        self.model.add(LSTM(self.hidden_len, return_sequences=True,
                             input_shape=(self.sentence_length,
                                          self.input_len)))
         self.model.add(Dropout(dropout))
@@ -65,12 +61,11 @@ class SequenceAnalyzer(object):
 
     def build_gru(self, dropout=0.2):
         """
-        Stacked GRU with specified dropout rate, a model built with
-        softmax activation, cross entropy loss and rmsprop optimizer
+        Stacked GRU with specified dropout rate (default 0.2), built with
+        softmax activation, cross entropy loss and rmsprop optimizer.
         """
         # 2 layer GRU with specified number of nodes in the hidden layer.
-        self.model.add(GRU(self.hidden_len,
-                           return_sequences=self.return_sequence,
+        self.model.add(GRU(self.hidden_len, return_sequences=True,
                            input_shape=(self.sentence_length,
                                         self.input_len)))
         self.model.add(Dropout(dropout))
@@ -85,21 +80,20 @@ class SequenceAnalyzer(object):
 
     def save_model(self):
         """
-        Save the model weight into a file
+        Save the model weight into a hdf5 file.
         """
         self.model.save_weights('rnn_model_weights.h5')
 
     def plot_model(self):
         """
-        Plot the model, need the following packages:
-        pydot, graphviz, setuptools, pyparsing
+        Plot model.
         """
         plot(self.model, to_file='rnn_model.png')
 
     @classmethod
     def sample(cls, prob, temperature=1.0):
         """
-        softmax function for reinforcement learning
+        Softmax function for reinforcement learning.
         """
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
@@ -109,19 +103,15 @@ class SequenceAnalyzer(object):
 
 class History(Callback):
     """
-    Record the loss and accuracy history
+    Record the loss and accuracy history.
     """
     def on_train_begin(self, logs={}):
-        # self.losses = []
         # training loss and accuracy
         self.train_losses = []
         self.train_acc = []
         # validation loss and accuracy
         self.val_losses = []
         self.val_acc = []
-
-    # def on_batch_end(self, batch, logs={}):
-        # self.losses.append(logs.get('loss'))
 
     def on_epoch_end(self, epoch, logs={}):
         # record training loss and accuracy
@@ -133,10 +123,9 @@ class History(Callback):
 
 
 
-def get_data():
+def get_data(sentence_length=40, step=3):
     """
-    retrieves data from a plain txt file and formats it
-    using 1-of-k encoding
+    Retrieves data from a plain txt file and formats it using one-hot vector.
     """
     # read file and convert ids of each line into array of numbers
     with open("train_data", 'r') as f:
@@ -152,17 +141,13 @@ def get_data():
     # number of template id types
     vocab_size = len(vocab)
 
-    # length of one sentence
-    sentence_length = 40
-    # sample step per sentence
-    step = 3
-
     # list of sentences
     sentences = []
     # list of the next id for each of the according sentence
     next_ids = []
 
     # creat batch data and next id sequences
+    # starts with none predicting first id
     for i in range(0, sentence_length, step):
         sentences.append([0 for _ in range(0, sentence_length - i)] +
                          sequence[0: i])
@@ -175,18 +160,19 @@ def get_data():
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
-    x = np.zeros((len(sentences), sentence_length, vocab_size), dtype=np.bool)
+    X_train = np.zeros((len(sentences), sentence_length, vocab_size),
+                       dtype=np.bool)
     # expected outputs for each sentence
-    y = np.zeros((len(sentences), vocab_size), dtype=np.bool)
+    y_train = np.zeros((len(sentences), vocab_size), dtype=np.bool)
 
     for i, sentence in enumerate(sentences):
         for t, id_ in enumerate(sentence):
             # mark the each corresponding character in a sentence as 1
-            x[i, t, id_] = 1
+            X_train[i, t, id_] = 1
         # mark the corresponding character in expected output as 1
-        y[i, next_ids[i]] = 1
+        y_train[i, next_ids[i]] = 1
 
-    return sequence, sentence_length, vocab_size, x, y
+    return sequence, sentence_length, vocab_size, X_train, y_train
 
 
 
@@ -209,6 +195,7 @@ def print_losses(history):
         print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
 
 
+
 def train():
     """
     Trains the network and outputs the generated new sequence.
@@ -216,7 +203,7 @@ def train():
     """
     # get parameters and dimensions of the model
     print "Loading data..."
-    sequence, sentence_length, input_len, x, y = get_data()
+    sequence, sentence_length, input_len, X_train, y_train = get_data()
 
     # the size of each hidden layer
     hidden_len = 512
@@ -225,7 +212,7 @@ def train():
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     print "Building Model..."
-    rnn.build_lstm(dropout=0.2)
+    rnn.build_lstm()
 
     nb_iterations = 40
     # train model and output generated sequence
@@ -243,8 +230,8 @@ def train():
                                        verbose=1, save_best_only=True)
 
         # train the model
-        rnn.model.fit(x, y, batch_size=128, nb_epoch=1, validation_split=0.1,
-                      show_accuracy=True, verbose=1,
+        rnn.model.fit(X_train, y_train, batch_size=128, nb_epoch=1,
+                      validation_split=0.1, show_accuracy=True, verbose=1,
                       callbacks=[history, checkpointer])
 
         # start index of the seed, random number in range
