@@ -1,11 +1,10 @@
 """
-This program analyze the integer sequence using Recurrent Neural Network (RNN)
-(Uni-directional and Bi-directional) with Long Short-Term Memory (LSTM) and
-Gated Recurrent Unit (GRU) based on the python library Keras.
+This program analyze the integer sequence using (Uni-directional and
+Bi-directional) Recurrent Neural Network (RNN) with Long Short-Term Memory
+(LSTM) and Gated Recurrent Unit (GRU) based on the python library Keras.
 
 "Keras is a minimalist, highly modular neural networks library, written in
  Python and capable of running on top of either TensorFlow or Theano."
-
                                                 ---- Keras (http://keras.io/)
 
 Uni-directional model is based on the Keras example - lstm_text_generation:
@@ -33,78 +32,69 @@ from keras.utils.visualize_util import plot
 np.random.seed(1337)
 
 
-
 class SequenceAnalyzer(object):
     """
-    An integer sequence analyzer.
+    Sequence analyzer based on RNN.
     """
-    def __init__(self, sentence_length, input_len, hidden_len, output_len,
-                 return_sequence=True):
+    def __init__(self, sentence_length, input_len, hidden_len, output_len):
         self.sentence_length = sentence_length
         self.input_len = input_len
         self.hidden_len = hidden_len
         self.output_len = output_len
-        self.return_sequence = return_sequence
         # model is defined at child class
         self.model = None
 
-    def build_lstm(self, dropout=0.2):
+    def build_lstm(self, dropout):
         """
-        Build model, defined at child class based on different model:
-        Sequential or Graph.
+        Build model.
         """
         pass
 
-    def build_gru(self, dropout=0.2):
+    def build_gru(self, dropout):
         """
-        Build model, defined at child class based on different model:
-        Sequential or Graph.
+        Build model.
         """
         pass
 
     def save_model(self, filename):
         """
-        Save the model weight into a hdf5 file
+        Save the model weight into a hdf5 file.
         """
         self.model.save_weights(filename)
 
     def plot_model(self, filename):
         """
-        Plot the model, need the following packages:
-        pydot, graphviz, setuptools, pyparsing
+        Plot model.
         """
         plot(self.model, to_file=filename)
 
     @classmethod
     def sample(cls, prob, temperature=0.2):
         """
-        Softmax function for reinforcement learning
+        Softmax function for reinforcement learning.
         """
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
         return np.argmax(np.random.multinomial(1, prob, 1))
 
 
-
 class URNN(SequenceAnalyzer):
     """
     Uni-directional RNN model of the sequence analyzer. Sequential Model.
     """
-    def __init__(self, sentence_length, input_len, hidden_len, output_len,
-                 return_sequence=True):
-        super(URNN, self).__init__(sentence_length, input_len,
-                                   hidden_len, output_len,
-                                   return_sequence=return_sequence)
+    def __init__(self, sentence_length, input_len, hidden_len, output_len):
+        super(URNN, self).__init__(sentence_length,
+                                   input_len, hidden_len, output_len,
+                                   return_sequence=True)
         self.model = Sequential()
 
     def build_lstm(self, dropout=0.2):
         """
-        Stacked LSTM with specified dropout rate, a model built with
-        softmax activation, cross entropy loss and rmsprop optimizer
+        Stacked LSTM with specified dropout rate (default 0.2), built with
+        softmax activation, cross entropy loss and rmsprop optimizer.
         """
         # 2 layer LSTM with specified number of nodes in the hidden layer.
-        self.model.add(LSTM(self.hidden_len,
-                            return_sequences=self.return_sequence,
+        self.model.add(LSTM(self.hidden_len, return_sequences=True,
                             input_shape=(self.sentence_length,
                                          self.input_len)))
         self.model.add(Dropout(dropout))
@@ -119,12 +109,11 @@ class URNN(SequenceAnalyzer):
 
     def build_gru(self, dropout=0.2):
         """
-        Stacked GRU with specified dropout rate, a model built with
-        softmax activation, cross entropy loss and rmsprop optimizer
+        Stacked GRU with specified dropout rate (default 0.2), built with
+        softmax activation, cross entropy loss and rmsprop optimizer.
         """
         # 2 layer GRU with specified number of nodes in the hidden layer.
-        self.model.add(GRU(self.hidden_len,
-                           return_sequences=self.return_sequence,
+        self.model.add(GRU(self.hidden_len, return_sequences=True,
                            input_shape=(self.sentence_length,
                                         self.input_len)))
         self.model.add(Dropout(dropout))
@@ -139,42 +128,39 @@ class URNN(SequenceAnalyzer):
 
     def save_model(self):
         """
-        Save the model weight into a hdf5 file
+        Save the model weight into a hdf5 file.
         """
         super(URNN, self).save_model('rnn_model_weights.h5')
 
     def plot_model(self):
         """
-        Plot the model, need the following packages:
-        pydot, graphviz, setuptools, pyparsing
+        Plot model.
         """
         super(URNN, self).plot_model('rnn_model.png')
-
 
 
 class BRNN(SequenceAnalyzer):
     """
     Bi-directional RNN model of the sequence analyzer. Graph Model.
     """
-    def __init__(self, sentence_length, input_len, hidden_len, output_len,
-                 return_sequence=True):
-        super(BRNN, self).__init__(sentence_length, input_len,
-                                   hidden_len, output_len,
-                                   return_sequence=return_sequence)
+    def __init__(self, sentence_length, input_len, hidden_len, output_len):
+        super(BRNN, self).__init__(sentence_length,
+                                   input_len, hidden_len, output_len)
         self.model = Graph()
 
     def build_lstm(self, dropout=0.2):
         """
-        Bidirectional LSTM with specified dropout rate, a model built with
+        Bidirectional LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
-        Two RNN LSTMs stacked on top of each other.
         """
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
+
         self.model.add_node(LSTM(self.hidden_len),
                             name='forward', input='input')
         self.model.add_node(LSTM(self.hidden_len, go_backwards=True),
                             name='backward', input='input')
+
         self.model.add_node(Dropout(dropout), name='dropout',
                             inputs=['forward', 'backward'])
         self.model.add_node(Dense(self.output_len, activation='softmax'),
@@ -187,16 +173,17 @@ class BRNN(SequenceAnalyzer):
 
     def build_gru(self, dropout=0.2):
         """
-        Bidirectional GRU with specified dropout rate, a model built with
+        Bidirectional GRU with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
-        Two RNN GRUs stacked on top of each other.
         """
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
+
         self.model.add_node(GRU(self.hidden_len),
                             name='forward', input='input')
         self.model.add_node(GRU(self.hidden_len, go_backwards=True),
                             name='backward', input='input')
+
         self.model.add_node(Dropout(dropout), name='dropout',
                             inputs=['forward', 'backward'])
         self.model.add_node(Dense(self.output_len, activation='softmax'),
@@ -209,14 +196,13 @@ class BRNN(SequenceAnalyzer):
 
     def save_model(self):
         """
-        Save the model weight into a hdf5 file
+        Save the model weight into a hdf5 file.
         """
         super(BRNN, self).save_model('brnn_model_weights.h5')
 
     def plot_model(self):
         """
-        Plot the model, need the following packages:
-        pydot, graphviz, setuptools, pyparsing
+        Plot model.
         """
         super(BRNN, self).plot_model('brnn_model.png')
 
@@ -224,7 +210,7 @@ class BRNN(SequenceAnalyzer):
 
 class History(Callback):
     """
-    Record the loss and accuracy history
+    Record the loss and accuracy history.
     """
     def on_train_begin(self, logs={}):
         # training loss and accuracy
@@ -244,9 +230,9 @@ class History(Callback):
 
 
 
-def get_data():
+def get_data(sentence_length=40, step=3):
     """
-    Retrieves data from a plain txt file and formats it using one-hot vector
+    Retrieves data from a plain txt file and formats it using one-hot vector.
     """
     # read file and convert ids of each line into array of numbers
     with open("train_data", 'r') as f:
@@ -262,17 +248,13 @@ def get_data():
     # number of template id types
     vocab_size = len(vocab)
 
-    # length of one sentence
-    sentence_length = 40
-    # sample step per sentence
-    step = 3
-
     # list of sentences
     sentences = []
     # list of the next id for each of the according sentence
     next_ids = []
 
     # creat batch data and next id sequences
+    # starts with none predicting first id
     for i in range(0, sentence_length, step):
         sentences.append([0 for _ in range(0, sentence_length - i)] +
                          sequence[0: i])
@@ -285,18 +267,19 @@ def get_data():
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
-    x = np.zeros((len(sentences), sentence_length, vocab_size), dtype=np.bool)
+    X_train = np.zeros((len(sentences), sentence_length, vocab_size),
+                       dtype=np.bool)
     # expected outputs for each sentence
-    y = np.zeros((len(sentences), vocab_size), dtype=np.bool)
+    y_train = np.zeros((len(sentences), vocab_size), dtype=np.bool)
 
     for i, sentence in enumerate(sentences):
         for t, id_ in enumerate(sentence):
             # mark the each corresponding character in a sentence as 1
-            x[i, t, id_] = 1
+            X_train[i, t, id_] = 1
         # mark the corresponding character in expected output as 1
-        y[i, next_ids[i]] = 1
+        y_train[i, next_ids[i]] = 1
 
-    return sequence, sentence_length, vocab_size, x, y
+    return sequence, sentence_length, vocab_size, X_train, y_train
 
 
 
@@ -330,7 +313,7 @@ def train(model='urnn'):
     """
     # get parameters and dimensions of the model
     print "Loading data..."
-    sequence, sentence_length, input_len, x, y = get_data()
+    sequence, sentence_length, input_len, X_train, y_train = get_data()
 
     # the size of each hidden layer
     hidden_len = 512
@@ -346,7 +329,7 @@ def train(model='urnn'):
                         hidden_len, input_len)
 
     print "Building Model..."
-    analyzer.build_lstm(dropout=0.2)
+    analyzer.build_lstm()
 
     # number of iterations
     nb_iterations = 40
@@ -365,7 +348,7 @@ def train(model='urnn'):
                                        verbose=1, save_best_only=True)
 
         # train the model
-        analyzer.model.fit(x, y, batch_size=128, nb_epoch=1,
+        analyzer.model.fit(X_train, y_train, batch_size=128, nb_epoch=1,
                            validation_split=0.1, show_accuracy=True, verbose=1,
                            callbacks=[history, checkpointer])
 
