@@ -302,21 +302,28 @@ def print_losses(history):
         print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
 
 
-def train(model='urnn'):
+def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
+          validation_split=0.1, nb_iterations=40, nb_predictions=100,
+          show_accuracy=True):
     """
     Trains the network and outputs the generated new sequence.
 
     Argument:
-        model: Specify the model type, i.e.,
-            urnn - Uni-directional RNN
-            brnn - Bi-directional RNN
+        model: string, specify the model type, i.e.,
+            'urnn' - Uni-directional RNN;
+            'brnn' - Bi-directional RNN.
+        hidden_len: integer, the size of a hidden layer.
+        batch_size: interger, the number of sentences per batch.
+        nb_epoch: interger, number of epoches per iteration.
+        validation_split: float (0 ~ 1), percentage of validation data
+            among training data.
+        show_accuracy: boolean, show accuracy during training.
+        nb_iterations: integer, number of iterations.
+        nb_predictions: integer, number of the ids predicted.
     """
     # get parameters and dimensions of the model
     print "Loading data..."
     sequence, sentence_length, input_len, X_train, y_train = get_data()
-
-    # the size of each hidden layer
-    hidden_len = 512
 
     # check model type: urnn or brnn
     if model == 'urnn':
@@ -331,8 +338,6 @@ def train(model='urnn'):
     print "Building Model..."
     analyzer.build_lstm()
 
-    # number of iterations
-    nb_iterations = 40
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
         print ""
@@ -348,8 +353,9 @@ def train(model='urnn'):
                                        verbose=1, save_best_only=True)
 
         # train the model
-        analyzer.model.fit(X_train, y_train, batch_size=128, nb_epoch=1,
-                           validation_split=0.1, show_accuracy=True, verbose=1,
+        analyzer.model.fit(X_train, y_train, validation_split=validation_split,
+                           batch_size=batch_size, nb_epoch=nb_epoch,
+                           show_accuracy=show_accuracy, verbose=1,
                            callbacks=[history, checkpointer])
 
         # start index of the seed, random number in range
@@ -369,7 +375,7 @@ def train(model='urnn'):
                                                       for g in generated))
 
             # generate 100 elements
-            for _ in range(100):
+            for _ in range(nb_predictions):
                 seed = np.zeros((1, sentence_length, input_len))
                 # format input
                 for t in range(0, sentence_length):

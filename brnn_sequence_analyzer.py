@@ -204,16 +204,23 @@ def print_losses(history):
 
 
 
-def train():
+def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
+          show_accuracy=True, nb_iterations=40, nb_predictions=100):
     """
-    Trains the network and outputs the generated text.
-    Trains using batch size of 128, 60 epochs total.
+    Trains the network and outputs the generated new sequence.
+
+    Argument:
+        hidden_len: integer, the size of a hidden layer.
+        batch_size: interger, the number of sentences per batch.
+        nb_epoch: interger, number of epoches per iteration.
+        validation_split: float (0 ~ 1), percentage of validation data
+            among training data.
+        show_accuracy: boolean, show accuracy during training.
+        nb_iterations: integer, number of iterations.
+        nb_predictions: integer, number of the ids predicted.
     """
     print "Loading data..."
     sequence, sentence_length, input_len, X_train, y_train = get_data()
-
-    # the size of each hidden layer
-    hidden_len = 512
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     # forward and backward
@@ -222,13 +229,6 @@ def train():
     print "Building Model..."
     brnn.build_lstm()
 
-    print "Train..."
-    brnn.model.fit({'input': X_train, 'output': y_train}, validation_split=0.1,
-                   verbose=1, batch_size=128, nb_epoch=1, show_accuracy=True)
-
-    # ------------------------------------------------------------------------ #
-
-    nb_iterations = 40
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
         print ""
@@ -244,9 +244,11 @@ def train():
                                        verbose=1, save_best_only=True)
 
         # train the model
-        brnn.model.fit({'input': X_train, 'output': y_train}, batch_size=128,
-                       nb_epoch=1, verbose=1, callbacks=[history, checkpointer],
-                       validation_split=0.1, show_accuracy=True)
+        brnn.model.fit({'input': X_train, 'output': y_train},
+                       batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
+                       callbacks=[history, checkpointer],
+                       validation_split=validation_split,
+                       show_accuracy=show_accuracy)
 
         # start index of the seed, random number in range
         start_index = random.randint(0, len(sequence) - sentence_length - 1)
@@ -265,7 +267,7 @@ def train():
                                                       for g in generated))
 
             # generate 100 elements
-            for _ in range(100):
+            for _ in range(nb_predictions):
                 seed = np.zeros((1, sentence_length, input_len))
                 # format input
                 for t in range(0, sentence_length):
