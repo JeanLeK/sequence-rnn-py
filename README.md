@@ -39,7 +39,7 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 ## Model
 
 
-- Two layers of LSTMs RNN model:
+- Two layers of LSTMs Uni-directional RNN model:
 
 ![ RNN LSTM ](https://github.com/fluency03/sequence-rnn-py/blob/master/rnn_model.png "RNN LSTM")
 
