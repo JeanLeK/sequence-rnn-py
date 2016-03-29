@@ -45,6 +45,7 @@ class SequenceAnalyzer(object):
         Bidirectional LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
+        print "Building Model..."
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
 
@@ -68,6 +69,7 @@ class SequenceAnalyzer(object):
         Bidirectional GRU with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
+        print "Building Model..."
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
 
@@ -86,16 +88,25 @@ class SequenceAnalyzer(object):
         self.model.compile(loss={'output': 'categorical_crossentropy'},
                            optimizer='rmsprop')
 
-    def save_model(self):
+    def save_model(self, filename):
         """
         Save the model weight into a hdf5 file.
         """
-        self.model.save_weights('brnn_model_weights.h5')
+        print "Save Weights..."
+        self.model.save_weights(filename)
+
+    def load_model(self, filename):
+        """
+        Load the model weight into a hdf5 file.
+        """
+        print "Load Weights..."
+        self.model.load_weights(filename)
 
     def plot_model(self):
         """
         Plot model.
         """
+        print "Plot Model..."
         plot(self.model, to_file='brnn_model.png')
 
     @classmethod
@@ -219,8 +230,11 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     # forward and backward
     brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
-    print "Building Model..."
+    # build model
     brnn.build_lstm()
+
+    # load the previous model weights
+    # brnn.load_model("weights.hdf5")
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
