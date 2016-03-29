@@ -32,6 +32,13 @@ from keras.utils.visualize_util import plot
 np.random.seed(1337)
 
 
+def override(f):
+    """
+    Override doc.
+    """
+    return f
+
+
 class SequenceAnalyzer(object):
     """
     Sequence analyzer based on RNN.
@@ -60,12 +67,21 @@ class SequenceAnalyzer(object):
         """
         Save the model weight into a hdf5 file.
         """
+        print "Save Weights..."
         self.model.save_weights(filename)
+
+    def load_model(self, filename):
+        """
+        Load the model weight into a hdf5 file.
+        """
+        print "Load Weights..."
+        self.model.load_weights(filename)
 
     def plot_model(self, filename):
         """
         Plot model.
         """
+        print "Plot Model..."
         plot(self.model, to_file=filename)
 
     @classmethod
@@ -88,11 +104,13 @@ class URNN(SequenceAnalyzer):
                                    return_sequence=True)
         self.model = Sequential()
 
+    @override
     def build_lstm(self, dropout=0.2):
         """
         Stacked LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
+        print "Building Model..."
         # 2 layer LSTM with specified number of nodes in the hidden layer.
         self.model.add(LSTM(self.hidden_len, return_sequences=True,
                             input_shape=(self.sentence_length,
@@ -107,11 +125,13 @@ class URNN(SequenceAnalyzer):
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
+    @override
     def build_gru(self, dropout=0.2):
         """
         Stacked GRU with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
+        print "Building Model..."
         # 2 layer GRU with specified number of nodes in the hidden layer.
         self.model.add(GRU(self.hidden_len, return_sequences=True,
                            input_shape=(self.sentence_length,
@@ -126,18 +146,6 @@ class URNN(SequenceAnalyzer):
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-    def save_model(self):
-        """
-        Save the model weight into a hdf5 file.
-        """
-        super(URNN, self).save_model('rnn_model_weights.h5')
-
-    def plot_model(self):
-        """
-        Plot model.
-        """
-        super(URNN, self).plot_model('rnn_model.png')
-
 
 class BRNN(SequenceAnalyzer):
     """
@@ -148,11 +156,13 @@ class BRNN(SequenceAnalyzer):
                                    input_len, hidden_len, output_len)
         self.model = Graph()
 
+    @override
     def build_lstm(self, dropout=0.2):
         """
         Bidirectional LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
+        print "Building Model..."
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
 
@@ -171,11 +181,13 @@ class BRNN(SequenceAnalyzer):
         self.model.compile(loss={'output': 'categorical_crossentropy'},
                            optimizer='rmsprop')
 
+    @override
     def build_gru(self, dropout=0.2):
         """
         Bidirectional GRU with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
+        print "Building Model..."
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
 
@@ -193,19 +205,6 @@ class BRNN(SequenceAnalyzer):
         # try using different optimizers and different optimizer configs
         self.model.compile(loss={'output': 'categorical_crossentropy'},
                            optimizer='rmsprop')
-
-    def save_model(self):
-        """
-        Save the model weight into a hdf5 file.
-        """
-        super(BRNN, self).save_model('brnn_model_weights.h5')
-
-    def plot_model(self):
-        """
-        Plot model.
-        """
-        super(BRNN, self).plot_model('brnn_model.png')
-
 
 
 class History(Callback):
@@ -227,7 +226,6 @@ class History(Callback):
         # record validation loss and accuracy
         self.val_losses.append(logs.get('val_loss'))
         self.val_acc.append(logs.get('val_acc'))
-
 
 
 def get_data(sentence_length=40, step=3):
@@ -273,7 +271,6 @@ def get_data(sentence_length=40, step=3):
         y_train[i, next_ids[i]] = 1
 
     return sequence, sentence_length, vocab_size, X_train, y_train
-
 
 
 def print_losses(history):
@@ -328,8 +325,11 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
         analyzer = BRNN(sentence_length, input_len,
                         hidden_len, input_len)
 
-    print "Building Model..."
+    # building model
     analyzer.build_lstm()
+
+    # load the previous model weights
+    # analyzer.load_model("weights.hdf5")
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
