@@ -73,7 +73,8 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
 - overall data size (#hidden layer and size -> #parameters):
  - #layers: the number of layers, [here](https://github.com/karpathy/char-rnn) suggests that always use num_layers of either 2 or 3.
  - layer size: the number of units per layer.
-Acoording to [char-rnn](https://github.com/karpathy/char-rnn), the two important quantities to keep track of here are:
+
+ Acoording to [char-rnn](https://github.com/karpathy/char-rnn), the two important quantities to keep track of here are:
  - The total number of parameters in your model. This is printed when you start training.
  - The size of your dataset. 1MB file is approximately 1 million characters.
 
