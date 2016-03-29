@@ -75,15 +75,22 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
  - layer size: the number of units per layer.
 
  Acoording to [char-rnn](https://github.com/karpathy/char-rnn), the two important quantities to keep track of here are:
- - The total number of parameters in your model. This is printed when you start training.
- - The size of your dataset. 1MB file is approximately 1 million characters.
+ - The total number of parameters in your model.
+ - The size of your dataset.
+ These two should be about the same order of magnitude.
 
-- learning rate:
 
-- dropout: an float between 0 and 1, indicating how much percentage of the hidden layer data are ignored when feeding to next layer. It is a powerful regularization method and mainly used for avoiding overfitting.
+- learning rate: This ratio (percentage) influences the speed (step of the gradient descent) and quality of learning. The greater the ratio, the faster the neuron trains; the lower the ratio, the more accurate the training is. Acoording to [LSTM: A Search Space Odyssey](http://arxiv.org/pdf/1503.04069v1.pdf), * the learning rate is by far the most important hyperparameter*. And based on their suggestion, *while searching for a good learning rate for the LSTM, it is sufficient to do a coarse search by starting with a high value (e.g. 1.0) and dividing it by ten until performance stops increasing.
+
+- dropout: an float between 0 and 1, indicating how much percentage of the hidden layer data are ignored when feeding to next layer. It is a powerful regularization method and mainly used for avoiding overfitting. If your model is overfitting, it better to increase the value of dropout.
 
 - reinforcement learning function (sample): The *temperature* parameter is dividing the predicted log probabilities before the *Softmax*, so lower temperature will cause the model to make more likely, but also more boring and conservative predictions. Higher temperatures cause the model to take more chances and increase diversity of results, but at a cost of more mistakes.
 
 - loss function: categorical_crossentropy
 
 - optimizer: rmsprop
+
+
+## Reference
+
+###### [1] Greff, Klaus, Rupesh Kumar Srivastava, Jan Koutník, Bas R. Steunebrink, and Jürgen Schmidhuber. "[LSTM: A search space odyssey.](http://arxiv.org/pdf/1503.04069v1.pdf)" arXiv preprint arXiv:1503.04069 (2015).
