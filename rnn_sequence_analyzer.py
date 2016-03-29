@@ -45,6 +45,7 @@ class SequenceAnalyzer(object):
         Stacked LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
+        print "Building Model..."
         # 2 layer LSTM with specified number of nodes in the hidden layer.
         self.model.add(LSTM(self.hidden_len, return_sequences=True,
                             input_shape=(self.sentence_length,
@@ -64,6 +65,7 @@ class SequenceAnalyzer(object):
         Stacked GRU with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
+        print "Building Model..."
         # 2 layer GRU with specified number of nodes in the hidden layer.
         self.model.add(GRU(self.hidden_len, return_sequences=True,
                            input_shape=(self.sentence_length,
@@ -78,16 +80,25 @@ class SequenceAnalyzer(object):
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-    def save_model(self):
+    def save_model(self, filename):
         """
         Save the model weight into a hdf5 file.
         """
-        self.model.save_weights('rnn_model_weights.h5')
+        print "Save Weights..."
+        self.model.save_weights(filename)
+
+    def load_model(self, filename):
+        """
+        Load the model weight into a hdf5 file.
+        """
+        print "Load Weights..."
+        self.model.load_weights(filename)
 
     def plot_model(self):
         """
         Plot model.
         """
+        print "Plot Model..."
         plot(self.model, to_file='rnn_model.png')
 
     @classmethod
@@ -211,8 +222,14 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
-    print "Building Model..."
+    # build model
     rnn.build_lstm()
+
+    # load the previous model weights
+    rnn.load_model("weights.hdf5")
+
+    total_history = [[0 for _ in range(nb_iterations * nb_epoch)]
+                     for _ in range(4)]
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
@@ -277,8 +294,14 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
             print "\n"
 
         # print the losses and accuracy
+        total_history[0].extend(history.train_losses)
+        total_history[1].extend(history.train_acc)
+        total_history[2].extend(history.val_losses)
+        total_history[3].extend(history.val_acc)
         print_losses(history)
+
+    print total_history
 
 
 if __name__ == '__main__':
-    train()
+    train(nb_iterations=20)
