@@ -238,15 +238,8 @@ def get_data(sentence_length=40, step=3):
     with open("train_data", 'r') as f:
         sequence = [int(id_) for id_ in f]
 
-    # vocabulary of the input sequence
-    vocab = set(sequence)
-    # add 0, representing 'no-log'
-    vocab.add(0)
-    # add another vocab, representing 'unknown-log'
-    vocab.add(len(vocab))
-
-    # number of template id types
-    vocab_size = len(vocab)
+    # add two extra positions for 'unknown-log' and 'no-log'
+    vocab_size = max(sequence) + 2
 
     # list of sentences
     sentences = []
