@@ -42,22 +42,26 @@ class SequenceAnalyzer(object):
         self.output_len = output_len
         self.model = Sequential()
 
-    def build_lstm(self, mapping='o2o', dropout=0.2):
+    def build_lstm(self, mapping='o2o', nb_layers=2, dropout=0.2):
         """
         Stacked LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
 
         Arguments:
-            mapping: input to output mapping
+            mapping: string, input to output mapping
                 o2o: one-to-one
                 m2m: many-to-many
-            dropout: dropout value
+            nb_layers: integer, number of layers in total
+            dropout: float, dropout value
         """
         print "Building Model..."
 
-        if mapping=='o2o':
+        # check whether the last layer return sequences
+        if mapping == 'o2o':
+            # if mapping is one-to-one
             return_sequences = False
-        elif mapping=='m2m':
+        elif mapping == 'm2m':
+            # if mapping is many-to-many
             return_sequences = True
 
         # 2 layer LSTM with specified number of nodes in the hidden layer.
@@ -66,33 +70,48 @@ class SequenceAnalyzer(object):
                                          self.input_len)))
         self.model.add(Dropout(dropout))
 
-        self.model.add(LSTM(self.hidden_len, return_sequences=return_sequences))
-        self.model.add(Dropout(dropout))
+        for nl in range(nb_layers-1):
+            # check whether return sequences
+            if nl != nb_layers-2:
+                return_sequences_ = True
+            else:
+                return_sequences_ = return_sequences
+            # build hidden layers
+            self.model.add(LSTM(self.hidden_len,
+                                return_sequences=return_sequences_))
+            self.model.add(Dropout(dropout))
 
-        if mapping=='o2o':
+        if mapping == 'o2o':
+            # if mapping is one-to-one
             self.model.add(Dense(self.output_len))
-        elif mapping=='m2m':
+        elif mapping == 'm2m':
+            # if mapping is many-to-many
             self.model.add(TimeDistributedDense(self.output_len))
+
         self.model.add(Activation('softmax'))
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-    def build_gru(self, mapping='o2o', dropout=0.2):
+    def build_gru(self, mapping='o2o', nb_layers=2, dropout=0.2):
         """
         Stacked GRU with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
 
         Arguments:
-            mapping: input to output mapping
+            mapping: string, input to output mapping
                 o2o: one-to-one
                 m2m: many-to-many
-            dropout: dropout value
+            nb_layers: integer, number of layers in total
+            dropout: float, dropout value
         """
         print "Building Model..."
 
-        if mapping=='o2o':
+        # check whether the last layer return sequences
+        if mapping == 'o2o':
+            # if mapping is one-to-one
             return_sequences = False
-        elif mapping=='m2m':
+        elif mapping == 'm2m':
+            # if mapping is many-to-many
             return_sequences = True
 
         # 2 layer GRU with specified number of nodes in the hidden layer.
@@ -101,13 +120,24 @@ class SequenceAnalyzer(object):
                                         self.input_len)))
         self.model.add(Dropout(dropout))
 
-        self.model.add(GRU(self.hidden_len, return_sequences=return_sequences))
-        self.model.add(Dropout(dropout))
+        for nl in range(nb_layers-1):
+            # check whether return sequences
+            if nl != nb_layers-2:
+                return_sequences_ = True
+            else:
+                return_sequences_ = return_sequences
+            # build hidden layers
+            self.model.add(GRU(self.hidden_len,
+                               return_sequences=return_sequences_))
+            self.model.add(Dropout(dropout))
 
-        if mapping=='o2o':
+        if mapping == 'o2o':
+            # if mapping is one-to-one
             self.model.add(Dense(self.output_len))
-        elif mapping=='m2m':
+        elif mapping == 'm2m':
+            # if mapping is many-to-many
             self.model.add(TimeDistributedDense(self.output_len))
+
         self.model.add(Activation('softmax'))
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
@@ -165,49 +195,7 @@ class History(Callback):
         self.val_acc.append(logs.get('val_acc'))
 
 
-
-def get_data_o2o(sentence_length=40, step=3):
-    """
-    Retrieves data from a plain txt file and formats it using one-hot vector.
-    """
-    # read file and convert ids of each line into array of numbers
-    with open("/home/cliu/Documents/SC-1/sequence", 'r') as f:
-        sequence = [int(id_) for id_ in f]
-
-    # add two extra positions for 'unknown-log' and 'no-log'
-    vocab_size = max(sequence) + 2
-
-    # list of sentences
-    sentences = []
-    # list of the next id for each of the according sentence
-    next_ids = []
-
-    # creat batch data and next id sequences
-    for i in range(0, len(sequence) - sentence_length, step):
-        sentences.append(sequence[i: i + sentence_length])
-        next_ids.append(sequence[i + sentence_length])
-
-    # number of sampes
-    nb_samples = len(sentences)
-    print "total # of sentences: %d" %nb_samples
-
-    # one-hot vector (all zeros except for a single one at
-    # the exact postion of this id number)
-    X_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
-    # expected outputs for each sentence
-    y_train = np.zeros((nb_samples, vocab_size), dtype=np.bool)
-
-    for i, sentence in enumerate(sentences):
-        for t, id_ in enumerate(sentence):
-            # mark the each corresponding character in a sentence as 1
-            X_train[i, t, id_] = 1
-        # mark the corresponding character in expected output as 1
-        y_train[i, next_ids[i]] = 1
-
-    return sequence, sentence_length, vocab_size, X_train, y_train
-
-
-def get_data_m2m(sentence_length=40, step=3):
+def get_data(mapping='o2o', sentence_length=40, step=3):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
     """
@@ -220,11 +208,17 @@ def get_data_m2m(sentence_length=40, step=3):
 
     X_sentences = []
     y_sentences = []
+    next_ids = []
 
     # creat batch data and next sentences
     for i in range(0, len(sequence) - sentence_length, step):
         X_sentences.append(sequence[i : i + sentence_length])
-        y_sentences.append(sequence[i + 1 : i + sentence_length + 1])
+        if mapping == 'o2o':
+            # if mapping is one-to-one
+            next_ids.append(sequence[i + sentence_length])
+        elif mapping == 'm2m':
+            # if mapping is many-to-many
+            y_sentences.append(sequence[i + 1 : i + sentence_length + 1])
 
     # number of sampes
     nb_samples = len(X_sentences)
@@ -234,13 +228,25 @@ def get_data_m2m(sentence_length=40, step=3):
     # the exact postion of this id number)
     X_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
     # expected outputs for each sentence
-    y_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
+    if mapping == 'o2o':
+        # if mapping is one-to-one
+        y_train = np.zeros((nb_samples, vocab_size), dtype=np.bool)
+    elif mapping == 'm2m':
+        # if mapping is many-to-many
+        y_train = np.zeros((nb_samples, sentence_length, vocab_size),
+                           dtype=np.bool)
 
     for i, x_sentence in enumerate(X_sentences):
         for t, id_ in enumerate(x_sentence):
             # mark the each corresponding character in a sentence as 1
             X_train[i, t, id_] = 1
-            y_train[i, t, y_sentences[i][t]] = 1
+            # if mapping is many-to-many
+            if mapping == 'm2m':
+                y_train[i, t, y_sentences[i][t]] = 1
+        # if mapping is one-to-one
+        # mark the corresponding character in expected output as 1
+        if mapping == 'o2o':
+            y_train[i, next_ids[i]] = 1
 
     return sequence, sentence_length, vocab_size, X_train, y_train
 
@@ -255,17 +261,17 @@ def print_save_losses(history):
     train_losses = history.train_losses
     train_acc = history.train_acc
     for l, a in zip(train_losses, train_acc):
-        print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+        print "     Loss: %.4f , Accuracy: %.4f" %(l, a)
 
     # print the losses and accuracy of validation
     print "Validation: "
     val_losses = history.val_losses
     val_acc = history.val_acc
     for l, a in zip(val_losses, val_acc):
-        print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+        print "     Loss: %.4f , Accuracy: %.4f" %(l, a)
 
     # continutously save the train_losses, train_acc, val_losses, val_acc
-    # into a csv file
+    # into a csv file with 4 columns respeactively
     rows = zip(train_losses, train_acc, val_losses, val_acc)
     with open('history.csv', 'a') as csvfile:
         his_writer = csv.writer(csvfile)
@@ -295,7 +301,8 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     """
     # get parameters and dimensions of the model
     print "Loading data..."
-    sequence, sentence_length, input_len, X_train, y_train = get_data_o2o()
+    sequence, sentence_length, input_len, X_train, y_train = get_data(
+        mapping=mapping, sentence_length=40, step=3)
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
@@ -304,7 +311,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     rnn.build_lstm(mapping=mapping)
 
     # load the previous model weights
-    rnn.load_model("weights3.hdf5")
+    rnn.load_model("weights4.hdf5")
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
@@ -366,6 +373,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
                 generated.append(next_id)
                 sentence.pop(0)
                 sentence.append(next_id)
+
             print "\n"
 
         # print the losses and accuracy
