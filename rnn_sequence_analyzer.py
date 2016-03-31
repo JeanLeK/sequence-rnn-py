@@ -183,23 +183,17 @@ def get_data_o2o(sentence_length=40, step=3):
     next_ids = []
 
     # creat batch data and next id sequences
-    # starts with none predicting first id
-    # for i in range(0, sentence_length, step):
-    #     sentences.append([0 for _ in range(0, sentence_length - i)] +
-    #                      sequence[0: i])
-    #     next_ids.append(sequence[i])
     for i in range(0, len(sequence) - sentence_length, step):
         sentences.append(sequence[i: i + sentence_length])
         next_ids.append(sequence[i + sentence_length])
 
+    # number of sampes
     nb_samples = len(sentences)
-
     print "total # of sentences: %d" %nb_samples
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
-    X_train = np.zeros((nb_samples, sentence_length, vocab_size),
-                       dtype=np.bool)
+    X_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
     # expected outputs for each sentence
     y_train = np.zeros((nb_samples, vocab_size), dtype=np.bool)
 
@@ -227,18 +221,18 @@ def get_data_m2m(sentence_length=40, step=3):
     X_sentences = []
     y_sentences = []
 
+    # creat batch data and next sentences
     for i in range(0, len(sequence) - sentence_length, step):
         X_sentences.append(sequence[i : i + sentence_length])
         y_sentences.append(sequence[i + 1 : i + sentence_length + 1])
 
+    # number of sampes
     nb_samples = len(X_sentences)
-
     print "total # of sentences: %d" %nb_samples
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
-    X_train = np.zeros((nb_samples, sentence_length, vocab_size),
-                       dtype=np.bool)
+    X_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
     # expected outputs for each sentence
     y_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
 
@@ -252,9 +246,9 @@ def get_data_m2m(sentence_length=40, step=3):
 
 
 
-def print_losses(history):
+def print_save_losses(history):
     """
-    Print the loss and accuracy
+    Print the loss and accuracy, and continuously save them into a csv file
     """
     # print the losses and accuracy of training
     print "Training: "
@@ -269,6 +263,14 @@ def print_losses(history):
     val_acc = history.val_acc
     for l, a in zip(val_losses, val_acc):
         print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+
+    # continutously save the train_losses, train_acc, val_losses, val_acc
+    # into a csv file
+    rows = zip(train_losses, train_acc, val_losses, val_acc)
+    with open('history.csv', 'a') as csvfile:
+        his_writer = csv.writer(csvfile)
+        for row in rows:
+            his_writer.writerow(row)
 
 
 
@@ -303,13 +305,6 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
 
     # load the previous model weights
     rnn.load_model("weights3.hdf5")
-
-    # training loss and accuracy
-    train_losses = []
-    train_acc = []
-    # validation loss and accuracy
-    val_losses = []
-    val_acc = []
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
@@ -373,22 +368,8 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
                 sentence.append(next_id)
             print "\n"
 
-        # save the train_losses, train_acc, val_losses, val_acc of this time of
-        # iteration into the overall lists
-        train_losses.extend(history.train_losses)
-        train_acc.extend(history.train_acc)
-        val_losses.extend(history.val_losses)
-        val_acc.extend(history.val_acc)
         # print the losses and accuracy
-        print_losses(history)
-
-    # save the train_losses, train_acc, val_losses, val_acc into a csv file
-    rows = zip(train_losses, train_acc, val_losses, val_acc)
-    with open('history.csv', 'wb') as csvfile:
-        his_writer = csv.writer(csvfile)
-        for row in rows:
-            his_writer.writerow(row)
-
+        print_save_losses(history)
 
 
 if __name__ == '__main__':
