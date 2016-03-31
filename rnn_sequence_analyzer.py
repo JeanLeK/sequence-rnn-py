@@ -48,11 +48,11 @@ class SequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer.
 
         Arguments:
-            mapping: string, input to output mapping
-                o2o: one-to-one
-                m2m: many-to-many
-            nb_layers: integer, number of layers in total
-            dropout: float, dropout value
+            mapping: {string}, input to output mapping
+                'o2o': one-to-one
+                'm2m': many-to-many
+            nb_layers: {integer}, number of layers in total
+            dropout: {float}, dropout value
         """
         print "Building Model..."
 
@@ -98,11 +98,11 @@ class SequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer.
 
         Arguments:
-            mapping: string, input to output mapping
-                o2o: one-to-one
-                m2m: many-to-many
-            nb_layers: integer, number of layers in total
-            dropout: float, dropout value
+            mapping: {string}, input to output mapping
+                'o2o': one-to-one
+                'm2m': many-to-many
+            nb_layers: {integer}, number of layers in total
+            dropout: {float}, dropout value
         """
         print "Building Model..."
 
@@ -145,6 +145,10 @@ class SequenceAnalyzer(object):
     def save_model(self, filename):
         """
         Save the model weight into a hdf5 file.
+
+        Arguments:
+            filename: {string}, the name/path to the file
+                to which the weights are going to be saved
         """
         print "Save Weights..."
         self.model.save_weights(filename)
@@ -152,6 +156,10 @@ class SequenceAnalyzer(object):
     def load_model(self, filename):
         """
         Load the model weight into a hdf5 file.
+
+        Arguments:
+            filename: {string}, the name/path to the file
+                to which the weights are going to be loaded
         """
         print "Load Weights..."
         self.model.load_weights(filename)
@@ -167,6 +175,10 @@ class SequenceAnalyzer(object):
     def sample(cls, prob, temperature=0.2):
         """
         Softmax function for reinforcement learning.
+
+        Arguments:
+            prob: {list}, a list of probabilities of each of the classes
+            temperature: {float}, Softmax temperature
         """
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
@@ -198,6 +210,13 @@ class History(Callback):
 def get_data(mapping='o2o', sentence_length=40, step=3):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
+
+    Arguments:
+        mapping: {string}, input to output mapping
+            'o2o': one-to-one
+            'm2m': many-to-many
+        sentence_length: {integer}, the length of each training sentence
+        step: {integer}, the sample steps
     """
     # read file and convert ids of each line into array of numbers
     with open("/home/cliu/Documents/SC-1/sequence", 'r') as f:
@@ -255,6 +274,9 @@ def get_data(mapping='o2o', sentence_length=40, step=3):
 def print_save_losses(history):
     """
     Print the loss and accuracy, and continuously save them into a csv file
+
+    Arguments:
+        history: {History}, the callbacks recording losses and accuracy
     """
     # print the losses and accuracy of training
     print "Training: "
@@ -287,17 +309,17 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     Trains the network and outputs the generated new sequence.
 
     Arguments:
-        hidden_len: integer, the size of a hidden layer.
-        batch_size: interger, the number of sentences per batch.
-        nb_epoch: interger, number of epoches per iteration.
-        validation_split: float (0 ~ 1), percentage of validation data
+        hidden_len: {integer}, the size of a hidden layer.
+        batch_size: {interger}, the number of sentences per batch.
+        nb_epoch: {interger}, number of epoches per iteration.
+        validation_split: {float} (0 ~ 1), percentage of validation data
             among training data.
-        show_accuracy: boolean, show accuracy during training.
-        nb_iterations: integer, number of iterations.
-        nb_predictions: integer, number of the ids predicted.
-        mapping: input to output mapping
-            o2o: one-to-one
-            m2m: many-to-many
+        show_accuracy: {boolean}, show accuracy during training.
+        nb_iterations: {integer}, number of iterations.
+        nb_predictions: {integer}, number of the ids predicted.
+        mapping: {string}, input to output mapping
+            'o2o': one-to-one
+            'm2m': many-to-many
     """
     # get parameters and dimensions of the model
     print "Loading data..."
