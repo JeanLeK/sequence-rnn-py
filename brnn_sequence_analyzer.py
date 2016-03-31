@@ -16,6 +16,7 @@ Data: 2016-03-26
 
 import sys
 import random
+import csv
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
@@ -91,6 +92,10 @@ class SequenceAnalyzer(object):
     def save_model(self, filename):
         """
         Save the model weight into a hdf5 file.
+
+        Arguments:
+            filename: {string}, the name/path to the file
+                to which the weights are going to be saved
         """
         print "Save Weights..."
         self.model.save_weights(filename)
@@ -98,6 +103,10 @@ class SequenceAnalyzer(object):
     def load_model(self, filename):
         """
         Load the model weight into a hdf5 file.
+
+        Arguments:
+            filename: {string}, the name/path to the file
+                to which the weights are going to be loaded
         """
         print "Load Weights..."
         self.model.load_weights(filename)
@@ -113,6 +122,10 @@ class SequenceAnalyzer(object):
     def sample(cls, prob, temperature=0.2):
         """
         Softmax function for reinforcement learning.
+
+        Arguments:
+            prob: {list}, a list of probabilities of each of the classes
+            temperature: {float}, Softmax temperature
         """
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
@@ -142,89 +155,123 @@ class History(Callback):
 
 
 
-def get_data(sentence_length=40, step=3):
+def get_data(mapping='o2o', sentence_length=40, step=3):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
+
+    Arguments:
+        mapping: {string}, input to output mapping
+            'o2o': one-to-one
+            'm2m': many-to-many
+        sentence_length: {integer}, the length of each training sentence
+        step: {integer}, the sample steps
     """
     # read file and convert ids of each line into array of numbers
-    with open("train_data", 'r') as f:
+    with open("/home/cliu/Documents/SC-1/sequence", 'r') as f:
         sequence = [int(id_) for id_ in f]
 
     # add two extra positions for 'unknown-log' and 'no-log'
     vocab_size = max(sequence) + 2
 
-    # list of sentences
-    sentences = []
-    # list of the next id for each of the according sentence
+    X_sentences = []
+    y_sentences = []
     next_ids = []
 
-    # creat batch data and next id sequences
-    # starts with none predicting first id
-    for i in range(0, sentence_length, step):
-        sentences.append([0 for _ in range(0, sentence_length - i)] +
-                         sequence[0: i])
-        next_ids.append(sequence[i])
+    # creat batch data and next sentences
     for i in range(0, len(sequence) - sentence_length, step):
-        sentences.append(sequence[i: i + sentence_length])
-        next_ids.append(sequence[i + sentence_length])
+        X_sentences.append(sequence[i : i + sentence_length])
+        if mapping == 'o2o':
+            # if mapping is one-to-one
+            next_ids.append(sequence[i + sentence_length])
+        elif mapping == 'm2m':
+            # if mapping is many-to-many
+            y_sentences.append(sequence[i + 1 : i + sentence_length + 1])
 
-    print "total # of sentences: %d" %len(sentences)
+    # number of sampes
+    nb_samples = len(X_sentences)
+    print "total # of sentences: %d" %nb_samples
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
-    X_train = np.zeros((len(sentences), sentence_length, vocab_size),
-                       dtype=np.bool)
+    X_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
     # expected outputs for each sentence
-    y_train = np.zeros((len(sentences), vocab_size), dtype=np.bool)
+    if mapping == 'o2o':
+        # if mapping is one-to-one
+        y_train = np.zeros((nb_samples, vocab_size), dtype=np.bool)
+    elif mapping == 'm2m':
+        # if mapping is many-to-many
+        y_train = np.zeros((nb_samples, sentence_length, vocab_size),
+                           dtype=np.bool)
 
-    for i, sentence in enumerate(sentences):
-        for t, id_ in enumerate(sentence):
+    for i, x_sentence in enumerate(X_sentences):
+        for t, id_ in enumerate(x_sentence):
             # mark the each corresponding character in a sentence as 1
             X_train[i, t, id_] = 1
+            # if mapping is many-to-many
+            if mapping == 'm2m':
+                y_train[i, t, y_sentences[i][t]] = 1
+        # if mapping is one-to-one
         # mark the corresponding character in expected output as 1
-        y_train[i, next_ids[i]] = 1
+        if mapping == 'o2o':
+            y_train[i, next_ids[i]] = 1
 
     return sequence, sentence_length, vocab_size, X_train, y_train
 
 
 
-def print_losses(history):
+def print_save_losses(history):
     """
-    Print the loss and accuracy
+    Print the loss and accuracy, and continuously save them into a csv file
+
+    Arguments:
+        history: {History}, the callbacks recording losses and accuracy
     """
     # print the losses and accuracy of training
     print "Training: "
     train_losses = history.train_losses
     train_acc = history.train_acc
     for l, a in zip(train_losses, train_acc):
-        print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+        print "     Loss: %.4f , Accuracy: %.4f" %(l, a)
 
     # print the losses and accuracy of validation
     print "Validation: "
     val_losses = history.val_losses
     val_acc = history.val_acc
     for l, a in zip(val_losses, val_acc):
-        print "     Loss: %.4f, Accuracy: %.4f" %(l, a)
+        print "     Loss: %.4f , Accuracy: %.4f" %(l, a)
+
+    # continutously save the train_losses, train_acc, val_losses, val_acc
+    # into a csv file with 4 columns respeactively
+    rows = zip(train_losses, train_acc, val_losses, val_acc)
+    with open('history.csv', 'a') as csvfile:
+        his_writer = csv.writer(csvfile)
+        for row in rows:
+            his_writer.writerow(row)
 
 
 
 def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
-          show_accuracy=True, nb_iterations=40, nb_predictions=100):
+          show_accuracy=True, nb_iterations=40, nb_predictions=100,
+          mapping='o2o'):
     """
     Trains the network and outputs the generated new sequence.
 
-    Argument:
-        hidden_len: integer, the size of a hidden layer.
-        batch_size: interger, the number of sentences per batch.
-        nb_epoch: interger, number of epoches per iteration.
-        validation_split: float (0 ~ 1), percentage of validation data
+    Arguments:
+        hidden_len: {integer}, the size of a hidden layer.
+        batch_size: {interger}, the number of sentences per batch.
+        nb_epoch: {interger}, number of epoches per iteration.
+        validation_split: {float} (0 ~ 1), percentage of validation data
             among training data.
-        show_accuracy: boolean, show accuracy during training.
-        nb_iterations: integer, number of iterations.
-        nb_predictions: integer, number of the ids predicted.
+        show_accuracy: {boolean}, show accuracy during training.
+        nb_iterations: {integer}, number of iterations.
+        nb_predictions: {integer}, number of the ids predicted.
+        mapping: {string}, input to output mapping
+            'o2o': one-to-one
+            'm2m': many-to-many
     """
     print "Loading data..."
-    sequence, sentence_length, input_len, X_train, y_train = get_data()
+    sequence, sentence_length, input_len, X_train, y_train = get_data(
+        mapping=mapping, sentence_length=40, step=3)
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     # forward and backward
@@ -298,7 +345,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
             print "\n"
 
         # print the losses and accuracy
-        print_losses(history)
+        print_save_losses(history)
 
 
 if __name__ == '__main__':
