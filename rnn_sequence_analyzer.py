@@ -16,13 +16,14 @@ Data: 2016-03-17
 
 import sys
 import random
-import numpy as np
 import csv
+import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
 from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
 from keras.models import Sequential
+from keras.optimizers import RMSprop
 from keras.utils.visualize_util import plot
 
 
@@ -135,7 +136,7 @@ class History(Callback):
 
 
 
-def get_data(sentence_length=50, step=3):
+def get_data(sentence_length=40, step=3):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
     """
@@ -227,9 +228,14 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     rnn.build_lstm()
 
     # load the previous model weights
-    # rnn.load_model("weights.hdf5")
+    rnn.load_model("weights2.hdf5")
 
-    # total_history = [[] for _ in range(4)]
+    # training loss and accuracy
+    train_losses = []
+    train_acc = []
+    # validation loss and accuracy
+    val_losses = []
+    val_acc = []
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
@@ -293,20 +299,23 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
                 sentence.append(next_id)
             print "\n"
 
+        # save the train_losses, train_acc, val_losses, val_acc of this time of
+        # iteration into the overall lists
+        train_losses.extend(history.train_losses)
+        train_acc.extend(history.train_acc)
+        val_losses.extend(history.val_losses)
+        val_acc.extend(history.val_acc)
         # print the losses and accuracy
-        # total_history[0].extend(history.train_losses)
-        # total_history[1].extend(history.train_acc)
-        # total_history[2].extend(history.val_losses)
-        # total_history[3].extend(history.val_acc)
         print_losses(history)
 
-    # print total_history
-    # with open('history.csv', 'wb') as csvfile:
-    #     his_writer = csv.writer(csvfile, delimiter=' ')
-    #     for i in range(len(total_history[0])):
-    #         his_writer.writerow([total_history[x][i] for x in range(4)])
+    # save the train_losses, train_acc, val_losses, val_acc into a csv file
+    rows = zip(train_losses, train_acc, val_losses, val_acc)
+    with open('history.csv', 'wb') as csvfile:
+        his_writer = csv.writer(csvfile)
+        for row in rows:
+            his_writer.writerow(row)
 
 
 
 if __name__ == '__main__':
-    train(nb_iterations=60)
+    train(nb_iterations=30)
