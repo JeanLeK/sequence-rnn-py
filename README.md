@@ -63,6 +63,8 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 
 This [hyperas](https://github.com/maxpumperla/hyperas) may help. It is *A very simple convenience wrapper around [hyperopt](https://github.com/hyperopt/hyperopt) for fast prototyping with keras models.* It is used for hyper-parameter optimization. An example can be found [here](https://github.com/maxpumperla/hyperas/blob/master/examples/lstm.py).
 
+Two good materials: [CHAPTER 3: Improving the way neural networks learn](http://neuralnetworksanddeeplearning.com/chap3.html) from [Michael Nielsen](http://michaelnielsen.org/), and [Neural Networks Part 2: Setting up the Data and the Loss](http://cs231n.github.io/neural-networks-2/) and [Neural Networks Part 3: Learning and Evaluation](http://cs231n.github.io/neural-networks-3/) from Stanford CS class [CS231n: Convolutional Neural Networks for Visual Recognition](http://cs231n.github.io/)
+
 
 According to [char-rnn](https://github.com/karpathy/char-rnn):
 
