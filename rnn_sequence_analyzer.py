@@ -166,7 +166,7 @@ class History(Callback):
 
 
 
-def get_data(sentence_length=40, step=3):
+def get_data_o2o(sentence_length=40, step=3):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
     """
@@ -184,22 +184,24 @@ def get_data(sentence_length=40, step=3):
 
     # creat batch data and next id sequences
     # starts with none predicting first id
-    for i in range(0, sentence_length, step):
-        sentences.append([0 for _ in range(0, sentence_length - i)] +
-                         sequence[0: i])
-        next_ids.append(sequence[i])
+    # for i in range(0, sentence_length, step):
+    #     sentences.append([0 for _ in range(0, sentence_length - i)] +
+    #                      sequence[0: i])
+    #     next_ids.append(sequence[i])
     for i in range(0, len(sequence) - sentence_length, step):
         sentences.append(sequence[i: i + sentence_length])
         next_ids.append(sequence[i + sentence_length])
 
-    print "total # of sentences: %d" %len(sentences)
+    nb_samples = len(sentences)
+
+    print "total # of sentences: %d" %nb_samples
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
-    X_train = np.zeros((len(sentences), sentence_length, vocab_size),
+    X_train = np.zeros((nb_samples, sentence_length, vocab_size),
                        dtype=np.bool)
     # expected outputs for each sentence
-    y_train = np.zeros((len(sentences), vocab_size), dtype=np.bool)
+    y_train = np.zeros((nb_samples, vocab_size), dtype=np.bool)
 
     for i, sentence in enumerate(sentences):
         for t, id_ in enumerate(sentence):
@@ -207,6 +209,44 @@ def get_data(sentence_length=40, step=3):
             X_train[i, t, id_] = 1
         # mark the corresponding character in expected output as 1
         y_train[i, next_ids[i]] = 1
+
+    return sequence, sentence_length, vocab_size, X_train, y_train
+
+
+def get_data_m2m(sentence_length=40, step=3):
+    """
+    Retrieves data from a plain txt file and formats it using one-hot vector.
+    """
+    # read file and convert ids of each line into array of numbers
+    with open("/home/cliu/Documents/SC-1/sequence", 'r') as f:
+        sequence = [int(id_) for id_ in f]
+
+    # add two extra positions for 'unknown-log' and 'no-log'
+    vocab_size = max(sequence) + 2
+
+    X_sentences = []
+    y_sentences = []
+
+    for i in range(0, len(sequence) - sentence_length, step):
+        X_sentences.append(sequence[i : i + sentence_length])
+        y_sentences.append(sequence[i + 1 : i + sentence_length + 1])
+
+    nb_samples = len(X_sentences)
+
+    print "total # of sentences: %d" %nb_samples
+
+    # one-hot vector (all zeros except for a single one at
+    # the exact postion of this id number)
+    X_train = np.zeros((nb_samples, sentence_length, vocab_size),
+                       dtype=np.bool)
+    # expected outputs for each sentence
+    y_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
+
+    for i, x_sentence in enumerate(X_sentences):
+        for t, id_ in enumerate(x_sentence):
+            # mark the each corresponding character in a sentence as 1
+            X_train[i, t, id_] = 1
+            y_train[i, t, y_sentences[i][t]] = 1
 
     return sequence, sentence_length, vocab_size, X_train, y_train
 
@@ -233,7 +273,8 @@ def print_losses(history):
 
 
 def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
-          show_accuracy=True, nb_iterations=40, nb_predictions=100):
+          show_accuracy=True, nb_iterations=40, nb_predictions=100,
+          mapping='o2o'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -246,16 +287,19 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
         show_accuracy: boolean, show accuracy during training.
         nb_iterations: integer, number of iterations.
         nb_predictions: integer, number of the ids predicted.
+        mapping: input to output mapping
+            o2o: one-to-one
+            m2m: many-to-many
     """
     # get parameters and dimensions of the model
     print "Loading data..."
-    sequence, sentence_length, input_len, X_train, y_train = get_data()
+    sequence, sentence_length, input_len, X_train, y_train = get_data_o2o()
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    rnn.build_lstm()
+    rnn.build_lstm(mapping=mapping)
 
     # load the previous model weights
     rnn.load_model("weights3.hdf5")
