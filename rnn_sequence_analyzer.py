@@ -20,7 +20,7 @@ import csv
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers.core import Activation, Dense, Dropout
+from keras.layers.core import Activation, Dense, TimeDistributedDense, Dropout
 from keras.layers.recurrent import LSTM, GRU
 from keras.models import Sequential
 from keras.optimizers import RMSprop
@@ -42,42 +42,72 @@ class SequenceAnalyzer(object):
         self.output_len = output_len
         self.model = Sequential()
 
-    def build_lstm(self, dropout=0.2):
+    def build_lstm(self, mapping='o2o', dropout=0.2):
         """
         Stacked LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
+
+        Arguments:
+            mapping: input to output mapping
+                o2o: one-to-one
+                m2m: many-to-many
+            dropout: dropout value
         """
         print "Building Model..."
+
+        if mapping=='o2o':
+            return_sequences = False
+        elif mapping=='m2m':
+            return_sequences = True
+
         # 2 layer LSTM with specified number of nodes in the hidden layer.
         self.model.add(LSTM(self.hidden_len, return_sequences=True,
                             input_shape=(self.sentence_length,
                                          self.input_len)))
         self.model.add(Dropout(dropout))
 
-        self.model.add(LSTM(self.hidden_len, return_sequences=False))
+        self.model.add(LSTM(self.hidden_len, return_sequences=return_sequences))
         self.model.add(Dropout(dropout))
 
-        self.model.add(Dense(self.output_len))
+        if mapping=='o2o':
+            self.model.add(Dense(self.output_len))
+        elif mapping=='m2m':
+            self.model.add(TimeDistributedDense(self.output_len))
         self.model.add(Activation('softmax'))
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-    def build_gru(self, dropout=0.2):
+    def build_gru(self, mapping='o2o', dropout=0.2):
         """
         Stacked GRU with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
+
+        Arguments:
+            mapping: input to output mapping
+                o2o: one-to-one
+                m2m: many-to-many
+            dropout: dropout value
         """
         print "Building Model..."
+
+        if mapping=='o2o':
+            return_sequences = False
+        elif mapping=='m2m':
+            return_sequences = True
+
         # 2 layer GRU with specified number of nodes in the hidden layer.
         self.model.add(GRU(self.hidden_len, return_sequences=True,
                            input_shape=(self.sentence_length,
                                         self.input_len)))
         self.model.add(Dropout(dropout))
 
-        self.model.add(GRU(self.hidden_len, return_sequences=False))
+        self.model.add(GRU(self.hidden_len, return_sequences=return_sequences))
         self.model.add(Dropout(dropout))
 
-        self.model.add(Dense(self.output_len))
+        if mapping=='o2o':
+            self.model.add(Dense(self.output_len))
+        elif mapping=='m2m':
+            self.model.add(TimeDistributedDense(self.output_len))
         self.model.add(Activation('softmax'))
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
@@ -207,7 +237,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     """
     Trains the network and outputs the generated new sequence.
 
-    Argument:
+    Arguments:
         hidden_len: integer, the size of a hidden layer.
         batch_size: interger, the number of sentences per batch.
         nb_epoch: interger, number of epoches per iteration.
@@ -228,7 +258,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     rnn.build_lstm()
 
     # load the previous model weights
-    rnn.load_model("weights2.hdf5")
+    rnn.load_model("weights3.hdf5")
 
     # training loss and accuracy
     train_losses = []
