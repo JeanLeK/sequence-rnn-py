@@ -10,6 +10,8 @@ based on the python library Keras.
 It is based on this Keras example - imdb_bidirectional_lstm.py:
 https://github.com/fchollet/keras/blob/master/examples/imdb_bidirectional_lstm.py
 
+TODO: options of mapping and nb_layers when building models
+
 Author: Chang Liu (fluency03)
 Data: 2016-03-26
 """
@@ -41,7 +43,7 @@ class SequenceAnalyzer(object):
         self.output_len = output_len
         self.model = Graph()
 
-    def build_lstm(self, dropout=0.2):
+    def build_lstm(self, mapping='o2o', nb_layers=2, dropout=0.2):
         """
         Bidirectional LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
@@ -65,7 +67,7 @@ class SequenceAnalyzer(object):
         self.model.compile(loss={'output': 'categorical_crossentropy'},
                            optimizer='rmsprop')
 
-    def build_gru(self, dropout=0.2):
+    def build_gru(self, mapping='o2o', nb_layers=2, dropout=0.2):
         """
         Bidirectional GRU with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
