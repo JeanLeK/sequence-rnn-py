@@ -13,6 +13,9 @@ https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
 Bi-directional model is based on the Keras example - imdb_bidirectional_lstm.py:
 https://github.com/fchollet/keras/blob/master/examples/imdb_bidirectional_lstm.py
 
+TODO: options of mapping and nb_layers when building models, and a lot others
+    (merge rnn_sequence_analyzer and brnn_sequence_analyzer)
+
 Author: Chang Liu (fluency03)
 Data: 2016-03-27
 """
