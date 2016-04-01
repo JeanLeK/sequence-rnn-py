@@ -1,4 +1,4 @@
-# sequence-rnn-py (not complete, for personal usage)
+# sequence-rnn-py (personal project, in development)
 
 [![Build Status](https://travis-ci.org/fluency03/sequence-rnn-py.svg?branch=master)](https://travis-ci.org/fluency03/sequence-rnn-py)
 
