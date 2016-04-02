@@ -56,11 +56,11 @@ class SequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer.
 
         Arguments:
-            mapping: {string}, input to output mapping
+            mapping: {string}, input to output mapping.
                 'o2o': one-to-one
                 'm2m': many-to-many
-            nb_layers: {integer}, number of layers in total
-            dropout: {float}, dropout value
+            nb_layers: {integer}, number of layers in total.
+            dropout: {float}, dropout value.
         """
         print "Building Model..."
 
@@ -120,7 +120,7 @@ class SequenceAnalyzer(object):
 
         Arguments:
             filename: {string}, the name/path to the file
-                to which the weights are going to be saved
+                to which the weights are going to be saved.
         """
         print "Save Weights..."
         self.model.save_weights(filename)
@@ -131,7 +131,7 @@ class SequenceAnalyzer(object):
 
         Arguments:
             filename: {string}, the name/path to the file
-                to which the weights are going to be loaded
+                to which the weights are going to be loaded.
         """
         print "Load Weights..."
         self.model.load_weights(filename)
@@ -149,8 +149,10 @@ class SequenceAnalyzer(object):
         Softmax function for reinforcement learning.
 
         Arguments:
-            prob: {list}, a list of probabilities of each of the classes
-            temperature: {float}, Softmax temperature
+            prob: {list}, a list of probabilities of each of the classes.
+            temperature: {float}, Softmax temperature.
+        Returns:
+            {integer}, the most possible sample.
         """
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
@@ -201,6 +203,9 @@ def get_sequence(filename):
 
     Arguments:
         filename: {string}, the name/path of input log sequence file.
+    Returns:
+        {list}, the log sequence.
+        {integer}, the size of vocabulary.
     """
     # read file and convert ids of each line into array of numbers
     with open(filename, 'r') as f:
@@ -220,13 +225,16 @@ def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
     every time being called.
 
     Arguments:
-        mapping: {string}, input to output mapping
+        mapping: {string}, input to output mapping.
             'o2o': one-to-one
             'm2m': many-to-many
-        sentence_length: {integer}, the length of each training sentence
-        step: {integer}, the sample steps
-        offset: {integer}, the offset of starting point of sampling
-        batch_size: {integer}, the number of sample per batch
+        sentence_length: {integer}, the length of each training sentence.
+        step: {integer}, the sample steps.
+        offset: {integer}, the offset of starting point of sampling.
+        batch_size: {integer}, the number of sample per batch.
+    Yields:
+        {np.array}, training input data X
+        {np.array}, training target data y
     """
     # the number of current sample
     sample_count = 0
@@ -286,10 +294,10 @@ def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
 
 def print_save_losses(history):
     """
-    Print the loss and accuracy, and continuously save them into a csv file
+    Print the loss and accuracy, and continuously save them into a csv file.
 
     Arguments:
-        history: {History}, the callbacks recording losses and accuracy
+        history: {History}, the callbacks recording losses and accuracy.
     """
     # print the losses and accuracy of training
     print "Training: "
@@ -328,12 +336,12 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
         show_accuracy: {boolean}, show accuracy during training.
         nb_iterations: {integer}, number of iterations.
         nb_predictions: {integer}, number of the ids predicted.
-        mapping: {string}, input to output mapping
+        mapping: {string}, input to output mapping.
             'o2o': one-to-one
             'm2m': many-to-many
-        sentence_length: {integer}, the length of each training sentence
-        step: {integer}, the sample steps
-        offset: {integer}, the offset of starting point of sampling
+        sentence_length: {integer}, the length of each training sentence.
+        step: {integer}, the sample steps.
+        offset: {integer}, the offset of starting point of sampling.
     """
     # get parameters and dimensions of the model
     print "Loading data..."

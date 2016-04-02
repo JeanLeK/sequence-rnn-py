@@ -10,8 +10,6 @@ based on the python library Keras.
 It is based on this Keras example - imdb_bidirectional_lstm.py:
 https://github.com/fchollet/keras/blob/master/examples/imdb_bidirectional_lstm.py
 
-TODO: options of mapping and nb_layers when building models
-
 Author: Chang Liu (fluency03)
 Data: 2016-03-26
 """
@@ -56,14 +54,14 @@ class SequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer.
 
         Arguments:
-            layer: {string}, the type of the layers in the RNN Model
+            layer: {string}, the type of the layers in the RNN Model.
                 'LSTM': LSTM layers
                 'GRU': GRU layers
-            mapping: {string}, input to output mapping
+            mapping: {string}, input to output mapping.
                 'o2o': one-to-one
                 'm2m': many-to-many
-            nb_layers: {integer}, number of layers in total
-            dropout: {float}, dropout value
+            nb_layers: {integer}, number of layers in total.
+            dropout: {float}, dropout value.
         """
         print "Building Model..."
 
@@ -145,7 +143,7 @@ class SequenceAnalyzer(object):
 
         Arguments:
             filename: {string}, the name/path to the file
-                to which the weights are going to be saved
+                to which the weights are going to be saved.
         """
         print "Save Weights..."
         self.model.save_weights(filename)
@@ -156,7 +154,7 @@ class SequenceAnalyzer(object):
 
         Arguments:
             filename: {string}, the name/path to the file
-                to which the weights are going to be loaded
+                to which the weights are going to be loaded.
         """
         print "Load Weights..."
         self.model.load_weights(filename)
@@ -174,8 +172,11 @@ class SequenceAnalyzer(object):
         Softmax function for reinforcement learning.
 
         Arguments:
-            prob: {list}, a list of probabilities of each of the classes
-            temperature: {float}, Softmax temperature
+            prob: {list}, a list of probabilities of each of the classes.
+            temperature: {float}, Softmax temperature.
+            temperature: {float}, Softmax temperature.
+        Returns:
+            {integer}, the most possible sample.
         """
         prob = np.log(prob) / temperature
         prob = np.exp(prob) / np.sum(np.exp(prob))
@@ -208,7 +209,7 @@ class History(Callback):
         A method starting at the begining of the training.
 
         Arguments:
-            epoch: {integer}, the current epoch
+            epoch: {integer}, the current epoch.
             logs: {dictionary}, recording the training and validation
                 losses and accuracy of every epoch.
         """
@@ -226,6 +227,9 @@ def get_sequence(filename):
 
     Arguments:
         filename: {string}, the name/path of input log sequence file.
+    Returns:
+        {list}, the log sequence.
+        {integer}, the size of vocabulary.
     """
     # read file and convert ids of each line into array of numbers
     with open(filename, 'r') as f:
@@ -237,17 +241,20 @@ def get_sequence(filename):
     return sequence, vocab_size
 
 
-def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40,
-             step=3, offset=0):
+def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40, step=3,
+             offset=0):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
 
     Arguments:
-        mapping: {string}, input to output mapping
+        mapping: {string}, input to output mapping.
             'o2o': one-to-one
             'm2m': many-to-many
-        sentence_length: {integer}, the length of each training sentence
-        step: {integer}, the sample steps
+        sentence_length: {integer}, the length of each training sentence.
+        step: {integer}, the sample steps.
+    Returns:
+        {np.array}, training input data X
+        {np.array}, training target data y
     """
     X_sentences = []
     y_sentences = []
@@ -296,10 +303,10 @@ def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40,
 
 def print_save_losses(history):
     """
-    Print the loss and accuracy, and continuously save them into a csv file
+    Print the loss and accuracy, and continuously save them into a csv file.
 
     Arguments:
-        history: {History}, the callbacks recording losses and accuracy
+        history: {History}, the callbacks recording losses and accuracy.
     """
     # print the losses and accuracy of training
     print "Training: "
