@@ -43,7 +43,7 @@ class SequenceAnalyzer(object):
         self.output_len = output_len
         self.model = Sequential()
 
-    def build_lstm(self, mapping='o2o', nb_layers=2, dropout=0.2):
+    def build(self, layer='LSTM', mapping='o2o', nb_layers=2, dropout=0.2):
         """
         Stacked LSTM with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
@@ -57,55 +57,19 @@ class SequenceAnalyzer(object):
         """
         print "Building Model..."
 
-        # check whether the last layer return sequences
-        if mapping == 'o2o':
-            # if mapping is one-to-one
-            return_sequences = False
-        elif mapping == 'm2m':
-            # if mapping is many-to-many
-            return_sequences = True
-
-        # 2 layer LSTM with specified number of nodes in the hidden layer.
-        self.model.add(LSTM(self.hidden_len, return_sequences=True,
-                            input_shape=(self.sentence_length,
-                                         self.input_len)))
-        self.model.add(Dropout(dropout))
-
-        for nl in range(nb_layers-1):
-            # check whether return sequences
-            if nl != nb_layers-2:
-                return_sequences_ = True
-            else:
-                return_sequences_ = return_sequences
-            # build hidden layers
-            self.model.add(LSTM(self.hidden_len,
-                                return_sequences=return_sequences_))
-            self.model.add(Dropout(dropout))
-
-        if mapping == 'o2o':
-            # if mapping is one-to-one
-            self.model.add(Dense(self.output_len))
-        elif mapping == 'm2m':
-            # if mapping is many-to-many
-            self.model.add(TimeDistributedDense(self.output_len))
-
-        self.model.add(Activation('softmax'))
-
-        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
-
-    def build_gru(self, mapping='o2o', nb_layers=2, dropout=0.2):
-        """
-        Stacked GRU with specified dropout rate (default 0.2), built with
-        softmax activation, cross entropy loss and rmsprop optimizer.
-
-        Arguments:
-            mapping: {string}, input to output mapping
-                'o2o': one-to-one
-                'm2m': many-to-many
-            nb_layers: {integer}, number of layers in total
-            dropout: {float}, dropout value
-        """
-        print "Building Model..."
+        # check the layer type: LSTM or GRU
+        if layer == 'LSTM':
+            class LAYER(LSTM):
+                """
+                LAYER as LSTM.
+                """
+                pass
+        elif layer == 'GRU':
+            class LAYER(GRU):
+                """
+                LAYER as GRU.
+                """
+                pass
 
         # check whether the last layer return sequences
         if mapping == 'o2o':
@@ -115,10 +79,10 @@ class SequenceAnalyzer(object):
             # if mapping is many-to-many
             return_sequences = True
 
-        # 2 layer GRU with specified number of nodes in the hidden layer.
-        self.model.add(GRU(self.hidden_len, return_sequences=True,
-                           input_shape=(self.sentence_length,
-                                        self.input_len)))
+        # 2 layer RNN with specified number of nodes in the hidden layer.
+        self.model.add(LAYER(self.hidden_len, return_sequences=True,
+                             input_shape=(self.sentence_length,
+                                          self.input_len)))
         self.model.add(Dropout(dropout))
 
         for nl in range(nb_layers-1):
@@ -128,8 +92,8 @@ class SequenceAnalyzer(object):
             else:
                 return_sequences_ = return_sequences
             # build hidden layers
-            self.model.add(GRU(self.hidden_len,
-                               return_sequences=return_sequences_))
+            self.model.add(LAYER(self.hidden_len,
+                                 return_sequences=return_sequences_))
             self.model.add(Dropout(dropout))
 
         if mapping == 'o2o':
@@ -367,7 +331,7 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    rnn.build_lstm(mapping=mapping)
+    rnn.build(layer='LSTM', mapping=mapping)
 
     # load the previous model weights
     # rnn.load_model("weights4.hdf5")
