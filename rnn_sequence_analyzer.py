@@ -278,7 +278,7 @@ def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40,
         if mapping == 'o2o':
             y_train[i, next_ids[i]] = 1
 
-    return sequence, sentence_length, vocab_size, X_train, y_train
+    return X_train, y_train
 
 
 
@@ -337,12 +337,9 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     sequence, input_len = get_sequence("/home/cliu/Documents/SC-1/sequence")
 
     # create training data
-    (sequence,
-     sentence_length,
-     input_len,
-     X_train, y_train) = get_data(sequence, input_len, mapping=mapping,
-                                  sentence_length=sentence_length,
-                                  step=step, offset=offset)
+    X_train, y_train = get_data(sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length,
+                                step=step, offset=offset)
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
