@@ -208,12 +208,15 @@ class History(Callback):
         self.val_acc.append(logs.get('val_acc'))
 
 
-def get_sequence():
+def get_sequence(filename):
     """
     Get the original sequence from file.
+
+    Arguments:
+        filename: {string}, the name/path of input log sequence file.
     """
     # read file and convert ids of each line into array of numbers
-    with open("/home/cliu/Documents/SC-1/sequence", 'r') as f:
+    with open(filename, 'r') as f:
         sequence = [int(id_) for id_ in f]
 
     # add two extra positions for 'unknown-log' and 'no-log'
@@ -222,8 +225,8 @@ def get_sequence():
     return sequence, vocab_size
 
 
-def data_generator(mapping='o2o', sentence_length=40, step=3, offset=0,
-                   batch_size=128):
+def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
+                   step=3, offset=0, batch_size=128):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
     This method returns a data generator yeilding a batch of (X_train, y_train)
@@ -238,8 +241,7 @@ def data_generator(mapping='o2o', sentence_length=40, step=3, offset=0,
         offset: {integer}, the offset of starting point of sampling
         batch_size: {integer}, the number of sample per batch
     """
-    sequence, vocab_size = get_sequence()
-
+    # the number of current sample
     sample_count = 0
 
     # one-hot vector (all zeros except for a single one at
@@ -348,16 +350,18 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
     """
     # get parameters and dimensions of the model
     print "Loading data..."
-    sequence, input_len = get_sequence()
+    sequence, input_len = get_sequence("/home/cliu/Documents/SC-1/sequence")
 
     # data generator of X_train and y_train
-    train_data = data_generator(mapping=mapping, step=step,
-                                sentence_length=sentence_length, offset=offset)
+    train_data = data_generator(sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length, step=step,
+                                offset=offset, batch_size=batch_size)
 
     # data generator of X_val and y _val
-    val_data = data_generator(mapping=mapping, step=step,
-                              sentence_length=sentence_length,
-                              offset=np.random.randint(0, sentence_length-1))
+    val_data = data_generator(sequence, input_len, mapping=mapping,
+                              sentence_length=sentence_length, step=step,
+                              offset=np.random.randint(0, sentence_length-1),
+                              batch_size=batch_size)
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
@@ -383,11 +387,12 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
                                        verbose=1, save_best_only=True)
 
         # train the model with data generator
-        rnn.model.fit_generator(train_data, nb_epoch=nb_epoch,
-                                samples_per_epoch=batch_size*nb_batch,
-                                validation_data=val_data, nb_val_samples=400,
-                                show_accuracy=show_accuracy, verbose=1,
-                                callbacks=[history, checkpointer])
+        rnn.model.fit_generator(train_data,
+                                samples_per_epoch=batch_size * nb_batch,
+                                nb_epoch=nb_epoch, verbose=1,
+                                show_accuracy=show_accuracy,
+                                callbacks=[history, checkpointer],
+                                validation_data=val_data, nb_val_samples=400)
 
         # start index of the seed, random number in range
         start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
