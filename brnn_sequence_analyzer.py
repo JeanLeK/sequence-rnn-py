@@ -43,12 +43,26 @@ class SequenceAnalyzer(object):
         self.output_len = output_len
         self.model = Graph()
 
-    def build_lstm(self, mapping='o2o', nb_layers=2, dropout=0.2):
+    def build(self, layer='LSTM', mapping='o2o', nb_layers=2, dropout=0.2):
         """
-        Bidirectional LSTM with specified dropout rate (default 0.2), built with
+        Bidirectional RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
         print "Building Model..."
+
+        # check the layer type: LSTM or GRU
+        if layer == 'LSTM':
+            class LAYER(LSTM):
+                """
+                LAYER as LSTM.
+                """
+                pass
+        elif layer == 'GRU':
+            class LAYER(GRU):
+                """
+                LAYER as GRU.
+                """
+                pass
 
         # check whether the last layer return sequences
         if mapping == 'o2o':
@@ -62,17 +76,17 @@ class SequenceAnalyzer(object):
                              name='input', dtype='float')
 
         # first Bi-directional LSTM layer
-        self.model.add_node(LSTM(self.hidden_len, return_sequences=True),
+        self.model.add_node(LAYER(self.hidden_len, return_sequences=True),
                             name='forward1', input='input')
         self.model.add_node(Dropout(dropout),
                             name='forward_dropout1', input='forward1')
-        self.model.add_node(LSTM(self.hidden_len, return_sequences=True,
-                                 go_backwards=True),
+        self.model.add_node(LAYER(self.hidden_len, return_sequences=True,
+                                  go_backwards=True),
                             name='backward1', input='input')
         self.model.add_node(Dropout(dropout),
                             name='backward_dropout1', input='backward1')
 
-        # following Bi-directional LSTM layers
+        # following Bi-directional layers
         for nl in range(nb_layers-1):
             # check whether return sequences
             if nl != nb_layers-2:
@@ -80,80 +94,16 @@ class SequenceAnalyzer(object):
             else:
                 return_sequences_ = return_sequences
             # build following hidden layers
-            self.model.add_node(LSTM(self.hidden_len,
-                                     return_sequences=return_sequences_),
+            self.model.add_node(LAYER(self.hidden_len,
+                                      return_sequences=return_sequences_),
                                 name='forward' + str(nl+2),
                                 input='forward_dropout' + str(nl+1))
             self.model.add_node(Dropout(dropout),
                                 name='forward_dropout' + str(nl+2),
                                 input='forward' + str(nl+2))
-            self.model.add_node(LSTM(self.hidden_len,
-                                     return_sequences=return_sequences_,
-                                     go_backwards=True),
-                                name='backward' + str(nl+2),
-                                input='backward_dropout' + str(nl+1))
-            self.model.add_node(Dropout(dropout),
-                                name='backward_dropout' + str(nl+2),
-                                input='backward' + str(nl+2))
-
-        # self.model.add_node(Dropout(dropout), name='dropout',
-                            # inputs=['forward', 'backward'])
-        self.model.add_node(Dense(self.output_len, activation='softmax'),
-                            name='softmax',
-                            inputs=['forward_dropout' + str(nb_layers),
-                                    'backward_dropout' + str(nb_layers)])
-        self.model.add_output(name='output', input='softmax')
-
-        # try using different optimizers and different optimizer configs
-        self.model.compile(loss={'output': 'categorical_crossentropy'},
-                           optimizer='rmsprop')
-
-    def build_gru(self, mapping='o2o', nb_layers=2, dropout=0.2):
-        """
-        Bidirectional GRU with specified dropout rate (default 0.2), built with
-        softmax activation, cross entropy loss and rmsprop optimizer.
-        """
-        print "Building Model..."
-        # check whether the last layer return sequences
-        if mapping == 'o2o':
-            # if mapping is one-to-one
-            return_sequences = False
-        elif mapping == 'm2m':
-            # if mapping is many-to-many
-            return_sequences = True
-
-        self.model.add_input(input_shape=(self.sentence_length, self.input_len),
-                             name='input', dtype='float')
-
-        # first Bi-directional LSTM layer
-        self.model.add_node(GRU(self.hidden_len, return_sequences=True),
-                            name='forward1', input='input')
-        self.model.add_node(Dropout(dropout),
-                            name='forward_dropout1', input='forward1')
-        self.model.add_node(GRU(self.hidden_len, return_sequences=True,
-                                 go_backwards=True),
-                            name='backward1', input='input')
-        self.model.add_node(Dropout(dropout),
-                            name='backward_dropout1', input='backward1')
-
-        # following Bi-directional GRU layers
-        for nl in range(nb_layers-1):
-            # check whether return sequences
-            if nl != nb_layers-2:
-                return_sequences_ = True
-            else:
-                return_sequences_ = return_sequences
-            # build following hidden layers
-            self.model.add_node(GRU(self.hidden_len,
-                                     return_sequences=return_sequences_),
-                                name='forward' + str(nl+2),
-                                input='forward_dropout' + str(nl+1))
-            self.model.add_node(Dropout(dropout),
-                                name='forward_dropout' + str(nl+2),
-                                input='forward' + str(nl+2))
-            self.model.add_node(GRU(self.hidden_len,
-                                     return_sequences=return_sequences_,
-                                     go_backwards=True),
+            self.model.add_node(LAYER(self.hidden_len,
+                                      return_sequences=return_sequences_,
+                                      go_backwards=True),
                                 name='backward' + str(nl+2),
                                 input='backward_dropout' + str(nl+1))
             self.model.add_node(Dropout(dropout),
@@ -374,7 +324,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    brnn.build_lstm()
+    brnn.build(layer='LSTM')
 
     # plot model
     brnn.plot_model()
