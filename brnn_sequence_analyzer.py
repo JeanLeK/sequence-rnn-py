@@ -47,6 +47,16 @@ class SequenceAnalyzer(object):
         """
         Bidirectional RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
+
+        Arguments:
+            layer: {string}, the type of the layers in the RNN Model
+                'LSTM': LSTM layers
+                'GRU': GRU layers
+            mapping: {string}, input to output mapping
+                'o2o': one-to-one
+                'm2m': many-to-many
+            nb_layers: {integer}, number of layers in total
+            dropout: {float}, dropout value
         """
         print "Building Model..."
 
@@ -324,7 +334,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    brnn.build(layer='LSTM')
+    brnn.build(layer='LSTM', mapping=mapping)
 
     # plot model
     brnn.plot_model()
