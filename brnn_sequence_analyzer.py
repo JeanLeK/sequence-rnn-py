@@ -17,7 +17,6 @@ Data: 2016-03-26
 """
 
 import sys
-import random
 import csv
 import numpy as np
 
@@ -25,6 +24,7 @@ from keras.callbacks import Callback, ModelCheckpoint
 from keras.layers.core import Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
 from keras.models import Graph
+from keras.optimizers import RMSprop
 from keras.utils.visualize_util import plot
 
 
@@ -175,7 +175,6 @@ class SequenceAnalyzer(object):
         return np.argmax(np.random.multinomial(1, prob, 1))
 
 
-
 class History(Callback):
     """
     Record the loss and accuracy history.
@@ -271,7 +270,6 @@ def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40,
     return X_train, y_train
 
 
-
 def print_save_losses(history):
     """
     Print the loss and accuracy, and continuously save them into a csv file
@@ -300,7 +298,6 @@ def print_save_losses(history):
         his_writer = csv.writer(csvfile)
         for row in rows:
             his_writer.writerow(row)
-
 
 
 def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
@@ -364,7 +361,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
                        show_accuracy=show_accuracy)
 
         # start index of the seed, random number in range
-        start_index = random.randint(0, len(sequence) - sentence_length - 1)
+        start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
 
         # the Temperature option list
         t_list = [0.2, 0.5]

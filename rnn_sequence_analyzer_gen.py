@@ -150,7 +150,6 @@ class SequenceAnalyzer(object):
         return np.argmax(np.random.multinomial(1, prob, 1))
 
 
-
 class History(Callback):
     """
     Record the loss and accuracy history.

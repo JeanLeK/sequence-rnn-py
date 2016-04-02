@@ -152,7 +152,6 @@ class SequenceAnalyzer(object):
         return np.argmax(np.random.multinomial(1, prob, 1))
 
 
-
 class History(Callback):
     """
     Record the loss and accuracy history.
@@ -248,7 +247,6 @@ def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40,
     return X_train, y_train
 
 
-
 def print_save_losses(history):
     """
     Print the loss and accuracy, and continuously save them into a csv file
@@ -277,7 +275,6 @@ def print_save_losses(history):
         his_writer = csv.writer(csvfile)
         for row in rows:
             his_writer.writerow(row)
-
 
 
 def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
