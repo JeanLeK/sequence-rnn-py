@@ -356,6 +356,7 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
     Arguments:
         hidden_len: {integer}, the size of a hidden layer.
         batch_size: {interger}, the number of sentences per batch.
+        nb_batch: {integer}, number of batches to be trained durign each epoch.
         nb_epoch: {interger}, number of epoches per iteration.
         validation_split: {float} (0 ~ 1), percentage of validation data
             among training data.
