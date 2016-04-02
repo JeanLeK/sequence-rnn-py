@@ -207,7 +207,25 @@ class History(Callback):
         self.val_acc.append(logs.get('val_acc'))
 
 
-def get_data(mapping='o2o', sentence_length=40, step=3):
+def get_sequence(filename):
+    """
+    Get the original sequence from file.
+
+    Arguments:
+        filename: {string}, the name/path of input log sequence file.
+    """
+    # read file and convert ids of each line into array of numbers
+    with open(filename, 'r') as f:
+        sequence = [int(id_) for id_ in f]
+
+    # add two extra positions for 'unknown-log' and 'no-log'
+    vocab_size = max(sequence) + 2
+
+    return sequence, vocab_size
+
+
+def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40,
+             step=3, offset=0):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
 
@@ -218,13 +236,6 @@ def get_data(mapping='o2o', sentence_length=40, step=3):
         sentence_length: {integer}, the length of each training sentence
         step: {integer}, the sample steps
     """
-    # read file and convert ids of each line into array of numbers
-    with open("/home/cliu/Documents/SC-1/sequence", 'r') as f:
-        sequence = [int(id_) for id_ in f]
-
-    # add two extra positions for 'unknown-log' and 'no-log'
-    vocab_size = max(sequence) + 2
-
     X_sentences = []
     y_sentences = []
     next_ids = []
@@ -304,7 +315,7 @@ def print_save_losses(history):
 
 def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
           show_accuracy=True, nb_iterations=40, nb_predictions=100,
-          mapping='o2o'):
+          mapping='o2o', sentence_length=40, step=3, offset=0):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -323,8 +334,15 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     """
     # get parameters and dimensions of the model
     print "Loading data..."
-    sequence, sentence_length, input_len, X_train, y_train = get_data(
-        mapping=mapping, sentence_length=40, step=3)
+    sequence, input_len = get_sequence("/home/cliu/Documents/SC-1/sequence")
+
+    # create training data
+    (sequence,
+     sentence_length,
+     input_len,
+     X_train, y_train) = get_data(sequence, input_len, mapping=mapping,
+                                  sentence_length=sentence_length,
+                                  step=step, offset=offset)
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
@@ -333,7 +351,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     rnn.build_lstm(mapping=mapping)
 
     # load the previous model weights
-    rnn.load_model("weights4.hdf5")
+    # rnn.load_model("weights4.hdf5")
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
@@ -351,11 +369,10 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
 
         # train the model
         rnn.model.fit(X_train, y_train,
-                      batch_size=batch_size, nb_epoch=nb_epoch,
+                      batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
+                      callbacks=[history, checkpointer],
                       validation_split=validation_split,
-                      show_accuracy=show_accuracy,
-                      verbose=1,
-                      callbacks=[history, checkpointer])
+                      show_accuracy=show_accuracy)
 
         # start index of the seed, random number in range
         start_index = random.randint(0, len(sequence) - sentence_length - 1)
@@ -403,4 +420,4 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
 
 
 if __name__ == '__main__':
-    train(nb_iterations=30)
+    train()
