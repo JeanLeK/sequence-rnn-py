@@ -15,7 +15,6 @@ Data: 2016-03-17
 """
 
 import sys
-import random
 import csv
 import numpy as np
 
