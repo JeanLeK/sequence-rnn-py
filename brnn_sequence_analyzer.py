@@ -49,18 +49,59 @@ class SequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
         print "Building Model..."
+
+        # check whether the last layer return sequences
+        if mapping == 'o2o':
+            # if mapping is one-to-one
+            return_sequences = False
+        elif mapping == 'm2m':
+            # if mapping is many-to-many
+            return_sequences = True
+
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
 
-        self.model.add_node(LSTM(self.hidden_len),
-                            name='forward', input='input')
-        self.model.add_node(LSTM(self.hidden_len, go_backwards=True),
-                            name='backward', input='input')
+        # first Bi-directional LSTM layer
+        self.model.add_node(LSTM(self.hidden_len, return_sequences=True),
+                            name='forward1', input='input')
+        self.model.add_node(Dropout(dropout),
+                            name='forward_dropout1', input='forward1')
+        self.model.add_node(LSTM(self.hidden_len, return_sequences=True,
+                                 go_backwards=True),
+                            name='backward1', input='input')
+        self.model.add_node(Dropout(dropout),
+                            name='backward_dropout1', input='backward1')
 
-        self.model.add_node(Dropout(dropout), name='dropout',
-                            inputs=['forward', 'backward'])
+        # following Bi-directional LSTM layers
+        for nl in range(nb_layers-1):
+            # check whether return sequences
+            if nl != nb_layers-2:
+                return_sequences_ = True
+            else:
+                return_sequences_ = return_sequences
+            # build following hidden layers
+            self.model.add_node(LSTM(self.hidden_len,
+                                     return_sequences=return_sequences_),
+                                name='forward' + str(nl+2),
+                                input='forward_dropout' + str(nl+1))
+            self.model.add_node(Dropout(dropout),
+                                name='forward_dropout' + str(nl+2),
+                                input='forward' + str(nl+2))
+            self.model.add_node(LSTM(self.hidden_len,
+                                     return_sequences=return_sequences_,
+                                     go_backwards=True),
+                                name='backward' + str(nl+2),
+                                input='backward_dropout' + str(nl+1))
+            self.model.add_node(Dropout(dropout),
+                                name='backward_dropout' + str(nl+2),
+                                input='backward' + str(nl+2))
+
+        # self.model.add_node(Dropout(dropout), name='dropout',
+                            # inputs=['forward', 'backward'])
         self.model.add_node(Dense(self.output_len, activation='softmax'),
-                            name='softmax', input='dropout')
+                            name='softmax',
+                            inputs=['forward_dropout' + str(nb_layers),
+                                    'backward_dropout' + str(nb_layers)])
         self.model.add_output(name='output', input='softmax')
 
         # try using different optimizers and different optimizer configs
@@ -73,18 +114,58 @@ class SequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer.
         """
         print "Building Model..."
+        # check whether the last layer return sequences
+        if mapping == 'o2o':
+            # if mapping is one-to-one
+            return_sequences = False
+        elif mapping == 'm2m':
+            # if mapping is many-to-many
+            return_sequences = True
+
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
 
-        self.model.add_node(GRU(self.hidden_len),
-                            name='forward', input='input')
-        self.model.add_node(GRU(self.hidden_len, go_backwards=True),
-                            name='backward', input='input')
+        # first Bi-directional LSTM layer
+        self.model.add_node(GRU(self.hidden_len, return_sequences=True),
+                            name='forward1', input='input')
+        self.model.add_node(Dropout(dropout),
+                            name='forward_dropout1', input='forward1')
+        self.model.add_node(GRU(self.hidden_len, return_sequences=True,
+                                 go_backwards=True),
+                            name='backward1', input='input')
+        self.model.add_node(Dropout(dropout),
+                            name='backward_dropout1', input='backward1')
 
-        self.model.add_node(Dropout(dropout), name='dropout',
-                            inputs=['forward', 'backward'])
+        # following Bi-directional GRU layers
+        for nl in range(nb_layers-1):
+            # check whether return sequences
+            if nl != nb_layers-2:
+                return_sequences_ = True
+            else:
+                return_sequences_ = return_sequences
+            # build following hidden layers
+            self.model.add_node(GRU(self.hidden_len,
+                                     return_sequences=return_sequences_),
+                                name='forward' + str(nl+2),
+                                input='forward_dropout' + str(nl+1))
+            self.model.add_node(Dropout(dropout),
+                                name='forward_dropout' + str(nl+2),
+                                input='forward' + str(nl+2))
+            self.model.add_node(GRU(self.hidden_len,
+                                     return_sequences=return_sequences_,
+                                     go_backwards=True),
+                                name='backward' + str(nl+2),
+                                input='backward_dropout' + str(nl+1))
+            self.model.add_node(Dropout(dropout),
+                                name='backward_dropout' + str(nl+2),
+                                input='backward' + str(nl+2))
+
+        # self.model.add_node(Dropout(dropout), name='dropout',
+                            # inputs=['forward', 'backward'])
         self.model.add_node(Dense(self.output_len, activation='softmax'),
-                            name='softmax', input='dropout')
+                            name='softmax',
+                            inputs=['forward_dropout' + str(nb_layers),
+                                    'backward_dropout' + str(nb_layers)])
         self.model.add_output(name='output', input='softmax')
 
         # try using different optimizers and different optimizer configs
@@ -156,8 +237,25 @@ class History(Callback):
         self.val_acc.append(logs.get('val_acc'))
 
 
+def get_sequence(filename):
+    """
+    Get the original sequence from file.
 
-def get_data(mapping='o2o', sentence_length=40, step=3):
+    Arguments:
+        filename: {string}, the name/path of input log sequence file.
+    """
+    # read file and convert ids of each line into array of numbers
+    with open(filename, 'r') as f:
+        sequence = [int(id_) for id_ in f]
+
+    # add two extra positions for 'unknown-log' and 'no-log'
+    vocab_size = max(sequence) + 2
+
+    return sequence, vocab_size
+
+
+def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40,
+             step=3, offset=0):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
 
@@ -168,13 +266,6 @@ def get_data(mapping='o2o', sentence_length=40, step=3):
         sentence_length: {integer}, the length of each training sentence
         step: {integer}, the sample steps
     """
-    # read file and convert ids of each line into array of numbers
-    with open("/home/cliu/Documents/SC-1/sequence", 'r') as f:
-        sequence = [int(id_) for id_ in f]
-
-    # add two extra positions for 'unknown-log' and 'no-log'
-    vocab_size = max(sequence) + 2
-
     X_sentences = []
     y_sentences = []
     next_ids = []
@@ -217,7 +308,7 @@ def get_data(mapping='o2o', sentence_length=40, step=3):
         if mapping == 'o2o':
             y_train[i, next_ids[i]] = 1
 
-    return sequence, sentence_length, vocab_size, X_train, y_train
+    return X_train, y_train
 
 
 
@@ -254,7 +345,7 @@ def print_save_losses(history):
 
 def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
           show_accuracy=True, nb_iterations=40, nb_predictions=100,
-          mapping='o2o'):
+          mapping='o2o', sentence_length=40, step=3, offset=0):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -272,8 +363,11 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
             'm2m': many-to-many
     """
     print "Loading data..."
-    sequence, sentence_length, input_len, X_train, y_train = get_data(
-        mapping=mapping, sentence_length=40, step=3)
+    sequence, input_len = get_sequence("/home/cliu/Documents/SC-1/sequence")
+
+    X_train, y_train = get_data(sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length,
+                                step=step, offset=offset)
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     # forward and backward
@@ -281,6 +375,9 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
 
     # build model
     brnn.build_lstm()
+
+    # plot model
+    brnn.plot_model()
 
     # load the previous model weights
     # brnn.load_model("weights.hdf5")
