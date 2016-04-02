@@ -166,22 +166,6 @@ class SequenceAnalyzer(object):
         print "Plot Model..."
         plot(self.model, to_file='brnn_model.png')
 
-    @classmethod
-    def sample(cls, prob, temperature=0.2):
-        """
-        Softmax function for reinforcement learning.
-
-        Arguments:
-            prob: {list}, a list of probabilities of each of the classes.
-            temperature: {float}, Softmax temperature.
-            temperature: {float}, Softmax temperature.
-        Returns:
-            {integer}, the most possible sample.
-        """
-        prob = np.log(prob) / temperature
-        prob = np.exp(prob) / np.sum(np.exp(prob))
-        return np.argmax(np.random.multinomial(1, prob, 1))
-
 
 class History(Callback):
     """
@@ -219,6 +203,21 @@ class History(Callback):
         # record validation loss and accuracy
         self.val_losses.append(logs.get('val_loss'))
         self.val_acc.append(logs.get('val_acc'))
+
+
+def sample(prob, temperature=0.2):
+    """
+    Softmax function for reinforcement learning.
+
+    Arguments:
+        prob: {list}, a list of probabilities of each of the classes.
+        temperature: {float}, Softmax temperature.
+    Returns:
+        {integer}, the most possible sample.
+    """
+    prob = np.log(prob) / temperature
+    prob = np.exp(prob) / np.sum(np.exp(prob))
+    return np.argmax(np.random.multinomial(1, prob, 1))
 
 
 def get_sequence(filename):
@@ -418,7 +417,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
                 # verbose = 0, no logging
                 predictions = brnn.model.predict(seed, verbose=0)[0]
                 # print "predictions length: %d" %len(predictions)
-                next_id = brnn.sample(predictions, T)
+                next_id = sample(predictions, T)
                 # print predictions[next_id]
                 # print next id
                 sys.stdout.write(' ' + str(next_id))
