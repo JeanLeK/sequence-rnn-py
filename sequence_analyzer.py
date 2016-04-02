@@ -37,7 +37,7 @@ np.random.seed(1337)
 
 def override(f):
     """
-    Override doc.
+    Override decorator.
     """
     return f
 

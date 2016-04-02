@@ -32,6 +32,13 @@ from keras.utils.visualize_util import plot
 np.random.seed(1337)
 
 
+def override(f):
+    """
+    Override decorator.
+    """
+    return f
+
+
 class SequenceAnalyzer(object):
     """
     Sequence analyzer based on RNN Graph model.
@@ -179,7 +186,15 @@ class History(Callback):
     """
     Record the loss and accuracy history.
     """
+    @override
     def on_train_begin(self, logs={}):
+        """
+        A method starting at the begining of the training.
+
+        Arguments:
+            logs: {dictionary}, recording the training and validation
+                losses and accuracy of every epoch.
+        """
         # training loss and accuracy
         self.train_losses = []
         self.train_acc = []
@@ -187,7 +202,16 @@ class History(Callback):
         self.val_losses = []
         self.val_acc = []
 
+    @override
     def on_epoch_end(self, epoch, logs={}):
+        """
+        A method starting at the begining of the training.
+
+        Arguments:
+            epoch: {integer}, the current epoch
+            logs: {dictionary}, recording the training and validation
+                losses and accuracy of every epoch.
+        """
         # record training loss and accuracy
         self.train_losses.append(logs.get('loss'))
         self.train_acc.append(logs.get('acc'))
