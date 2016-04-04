@@ -137,12 +137,16 @@ class SequenceAnalyzer(object):
         print "Load Weights..."
         self.model.load_weights(filename)
 
-    def plot_model(self):
+    def plot_model(self, filename='rnn_model.png'):
         """
         Plot model.
+
+        Arguments:
+            filename: {string}, the name/path to the file
+                to which the weights are going to be plotted.
         """
         print "Plot Model..."
-        plot(self.model, to_file='rnn_model.png')
+        plot(self.model, to_file=filename)
 
 
 class History(Callback):
@@ -341,6 +345,9 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
 
     # build model
     rnn.build(layer='LSTM', mapping=mapping)
+
+    # plot model
+    rnn.plot_model()
 
     # load the previous model weights
     # rnn.load_model("weights4.hdf5")

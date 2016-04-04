@@ -159,12 +159,16 @@ class SequenceAnalyzer(object):
         print "Load Weights..."
         self.model.load_weights(filename)
 
-    def plot_model(self):
+    def plot_model(self, filename='brnn_model.png'):
         """
         Plot model.
+
+        Arguments:
+            filename: {string}, the name/path to the file
+                to which the weights are going to be plotted.
         """
         print "Plot Model..."
-        plot(self.model, to_file='brnn_model.png')
+        plot(self.model, to_file=filename)
 
 
 class History(Callback):
