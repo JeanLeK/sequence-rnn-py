@@ -53,7 +53,7 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 
 - Training Set
 
-- Validation Set (10% of the training data)
+- Validation Set (5% of the training data)
 
 - Test Set
 
