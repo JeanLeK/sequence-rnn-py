@@ -515,7 +515,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
           validation_split=0.1, show_accuracy=True, nb_iterations=40,
           nb_predictions=100, mapping='o2o', sentence_length=40, step=3,
-          offset=0, mode='train'):
+          mode='train'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -534,7 +534,6 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
             'm2m': many-to-many
         sentence_length: {integer}, the length of each training sentence.
         step: {integer}, the sample steps.
-        offset: {integer}, the offset of starting point of sampling.
         mode: {string}, th running mode of this programm
             'train': train and predict
             'predict': only predict by loading existing model weights
@@ -542,17 +541,6 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
     # get parameters and dimensions of the model
     print "Loading data..."
     sequence, input_len = get_sequence("/home/cliu/Documents/SC-1/sequence")
-
-    # data generator of X_train and y_train
-    train_data = data_generator(sequence, input_len, mapping=mapping,
-                                sentence_length=sentence_length, step=step,
-                                offset=offset, batch_size=batch_size)
-
-    # data generator of X_val and y _val
-    val_data = data_generator(sequence, input_len, mapping=mapping,
-                              sentence_length=sentence_length, step=step,
-                              offset=np.random.randint(0, step-1),
-                              batch_size=batch_size)
 
     # check model type: urnn or brnn
     if model == 'urnn':
@@ -577,6 +565,17 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
+        # data generator of X_train and y_train, with random offset
+        train_data = data_generator(sequence, input_len, mapping=mapping,
+                                    sentence_length=sentence_length, step=step,
+                                    offset=np.random.randint(0, step-1),
+                                    batch_size=batch_size)
+
+        # data generator of X_val and y _val, with random offset
+        val_data = data_generator(sequence, input_len, mapping=mapping,
+                                  sentence_length=sentence_length, step=step,
+                                  offset=np.random.randint(0, step-1),
+                                  batch_size=batch_size)
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
