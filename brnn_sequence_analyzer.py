@@ -398,7 +398,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
         start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
 
         # the Temperature option list
-        t_list = [0.2, 0.5]
+        t_list = [0.2]
 
         # predict
         for T in t_list:
@@ -419,7 +419,12 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
 
                 # get predictions
                 # verbose = 0, no logging
-                predictions = brnn.model.predict(seed, verbose=0)[0]
+                if mapping == 'o2o':
+                    predictions = brnn.model.predict(seed, verbose=0)[0]
+                elif mapping == 'm2m':
+                    predictions = brnn.model.predict(seed,
+                                                     verbose=0)[0][
+                                                         sentence_length-1]
                 # print "predictions length: %d" %len(predictions)
                 next_id = sample(predictions, T)
                 # print predictions[next_id]

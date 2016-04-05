@@ -312,9 +312,9 @@ def print_save_losses(history):
             his_writer.writerow(row)
 
 
-def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
-          show_accuracy=True, nb_iterations=40, nb_predictions=100,
-          mapping='o2o', sentence_length=40, step=3, offset=0):
+def train(hidden_len=512, batch_size=32, nb_epoch=1, validation_split=0.05,
+          show_accuracy=True, nb_iterations=200, nb_predictions=80,
+          mapping='m2m', sentence_length=40, step=40, offset=0):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -333,7 +333,8 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     """
     # get parameters and dimensions of the model
     print "Loading data..."
-    sequence, input_len = get_sequence("/home/cliu/Documents/SC-1/sequence")
+    sequence, input_len = get_sequence(
+        "/home/cliu/Documents/SC-1/sequence_more")
 
     # create training data
     X_train, y_train = get_data(sequence, input_len, mapping=mapping,
@@ -344,13 +345,13 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    rnn.build(layer='LSTM', mapping=mapping)
+    rnn.build(layer='LSTM', mapping=mapping, nb_layers=1, dropout=0.2)
 
     # plot model
     rnn.plot_model()
 
     # load the previous model weights
-    # rnn.load_model("weights4.hdf5")
+    # rnn.load_model("weightsb1.hdf5")
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
@@ -374,10 +375,10 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
                       show_accuracy=show_accuracy)
 
         # start index of the seed, random number in range
-        start_index = random.randint(0, len(sequence) - sentence_length - 1)
+        start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
 
         # the Temperature option list
-        t_list = [0.2, 0.5]
+        t_list = [0.2]
 
         # predict
         for T in t_list:
@@ -389,7 +390,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
             sys.stdout.write("Generated: " + ' '.join(str(g)
                                                       for g in generated))
 
-            # generate 100 elements
+            # generate elements
             for _ in range(nb_predictions):
                 seed = np.zeros((1, sentence_length, input_len))
                 # format input
@@ -398,8 +399,14 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
 
                 # get predictions
                 # verbose = 0, no logging
-                predictions = rnn.model.predict(seed, verbose=0)[0]
+                if mapping == 'o2o':
+                    predictions = rnn.model.predict(seed, verbose=0)[0]
+                elif mapping == 'm2m':
+                    predictions = rnn.model.predict(seed,
+                                                    verbose=0)[0][
+                                                        sentence_length-1]
                 # print "predictions length: %d" %len(predictions)
+                # print predictions.shape
                 next_id = sample(predictions, T)
                 # print predictions[next_id]
                 # print next id
