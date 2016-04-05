@@ -27,7 +27,7 @@ from keras.utils.visualize_util import plot
 
 
 # random number generator with a fixed value for reproducibility
-# np.random.seed(1337)
+np.random.seed(1337)
 
 
 def override(f):
