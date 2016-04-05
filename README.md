@@ -74,7 +74,6 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
 - **batch size**: how many streams of data are processed in parallel at one time.
 
 - **samples per epoch** and **batches per epoch**: how many samples or batches considered per epoch. Based on some of my experiments: (i) the more #samples there are, the higher the accuracy can reach at the stable stage and the less the loss can be at the stable stage; (ii) the more #batches (integer ratio of #sample/batch_size) there are, the higher the accuracy can reach at table stage and the less the loss can be at stable stage and the less iterations it will take to reach the same loss/accuracy value. Some results can be found in the following figure. The training curves are in thick lines. The validation curves are in thin lines. The tuple after the line titles are (#samples, #batch_size).
-
 ![ Losses ](https://github.com/fluency03/sequence-rnn-py/blob/master/losses.png "Losses")
 
 - **sentence length**: *the length of each data stream, which is also the limit at which the gradients can propagate backwards in time. For example, if seq_length is 20, then the gradient signal will never backpropagate more than 20 time steps, and the model might not find dependencies longer than this length in number of characters.* This is actually the limitation of the model's long term memory. *Thus, if you have a very difficult dataset where there are a lot of long-term dependencies, you will want to increase this setting.*
