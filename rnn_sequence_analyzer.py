@@ -27,7 +27,7 @@ from keras.utils.visualize_util import plot
 
 
 # random number generator with a fixed value for reproducibility
-np.random.seed(1337)
+# np.random.seed(1337)
 
 
 def override(f):
@@ -228,11 +228,14 @@ def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40, step=3,
     Retrieves data from a plain txt file and formats it using one-hot vector.
 
     Arguments:
+        sequence: {lsit}, the original input sequence
+        vocab_size: {integer}, the number of unique id classes
         mapping: {string}, input to output mapping.
             'o2o': one-to-one
             'm2m': many-to-many
         sentence_length: {integer}, the length of each training sentence.
         step: {integer}, the sample steps.
+        offset: {integer}, the offset of starting point of sampling.
     Returns:
         {np.array}, training input data X
         {np.array}, training target data y
@@ -312,9 +315,68 @@ def print_save_losses(history):
             his_writer.writerow(row)
 
 
+def predict(sequence, input_len, analyzer, nb_predictions=80,
+            mapping='m2m', sentence_length=40):
+    """
+    Predict the next sequences using existing model and weights given some seed.
+
+    Arguments:
+        sequence: {lsit}, the original input sequence
+        input_len: {integer}, the number of unique id classes
+        analyzer: {SequenceAnalyzer}, the sequence analyzer
+        nb_predictions: {integer}, number of predictions after giving the seed
+        mapping: {string}, input to output mapping.
+            'o2o': one-to-one
+            'm2m': many-to-many
+        sentence_length: {integer}, the length of each sentence.
+    """
+    # start index of the seed, random number in range
+    start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
+
+
+    sentence = sequence[start_index:start_index + sentence_length]
+    # print sentence
+    generated = sentence
+    print "With seed: " + ' '.join(str(s) for s in sentence) + '\n'
+    sys.stdout.write("Generated: " + ' '.join(str(g)
+                                              for g in generated) + '\n')
+
+    # generate elements
+    for _ in range(nb_predictions):
+        seed = np.zeros((1, sentence_length, input_len))
+        # format input
+        for t in range(0, sentence_length):
+            seed[0, t, sentence[t]] = 1
+
+        # get predictions
+        # verbose = 0, no logging
+        predictions = analyzer.model.predict(seed, verbose=0)[0]
+
+        # print "predictions length: %d" %len(predictions)
+        # print predictions.shape
+        if mapping == 'o2o':
+            next_id = np.argmax(predictions)
+            sys.stdout.write(' ' + str(next_id))
+            sys.stdout.flush()
+        elif mapping == 'm2m':
+            next_sentence = []
+            for pred in predictions:
+                next_sentence.append(np.argmax(pred))
+            print ' '.join(str(id_) for id_ in next_sentence)
+            next_id = np.argmax(predictions[-1])
+
+        # use current output as input to predict the
+        # next id in the sequence
+        generated.append(next_id)
+        sentence.pop(0)
+        sentence.append(next_id)
+
+    print "\n"
+
+
 def train(hidden_len=512, batch_size=32, nb_epoch=1, validation_split=0.05,
-          show_accuracy=True, nb_iterations=200, nb_predictions=80,
-          mapping='m2m', sentence_length=40, step=40, offset=0):
+          show_accuracy=True, nb_iterations=40, nb_predictions=80,
+          mapping='m2m', sentence_length=40, step=40, offset=0, mode='train'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -330,6 +392,12 @@ def train(hidden_len=512, batch_size=32, nb_epoch=1, validation_split=0.05,
         mapping: {string}, input to output mapping.
             'o2o': one-to-one
             'm2m': many-to-many
+        sentence_length: {integer}, the length of each training sentence.
+        step: {integer}, the sample steps.
+        offset: {integer}, the offset of starting point of sampling.
+        mode: {string}, th running mode of this programm
+            'train': train and predict
+            'predict': only predict by loading existing model weights
     """
     # get parameters and dimensions of the model
     print "Loading data..."
@@ -351,7 +419,12 @@ def train(hidden_len=512, batch_size=32, nb_epoch=1, validation_split=0.05,
     rnn.plot_model()
 
     # load the previous model weights
-    # rnn.load_model("weightsb1.hdf5")
+    rnn.load_model("weightsd2.hdf5")
+
+    if mode == 'predict':
+        predict(sequence, input_len, rnn, nb_predictions=nb_predictions,
+                mapping=mapping, sentence_length=sentence_length)
+        return mode
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
@@ -424,6 +497,8 @@ def train(hidden_len=512, batch_size=32, nb_epoch=1, validation_split=0.05,
         # print the losses and accuracy
         print_save_losses(history)
 
+    return mode
+
 
 if __name__ == '__main__':
-    train()
+    train(mode='predict')
