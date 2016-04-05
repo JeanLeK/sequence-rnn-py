@@ -398,7 +398,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
           show_accuracy=True, nb_iterations=40, nb_predictions=100,
-          mapping='o2o', sentence_length=40, step=3, offset=0, mode='train'):
+          mapping='o2o', sentence_length=40, step=3, mode='train'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -416,17 +416,12 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
             'm2m': many-to-many
         sentence_length: {integer}, the length of each training sentence.
         step: {integer}, the sample steps.
-        offset: {integer}, the offset of starting point of sampling.
         mode: {string}, th running mode of this programm
             'train': train and predict
             'predict': only predict by loading existing model weights
     """
     print "Loading data..."
     sequence, input_len = get_sequence("/home/cliu/Documents/SC-1/sequence")
-
-    X_train, y_train = get_data(sequence, input_len, mapping=mapping,
-                                sentence_length=sentence_length,
-                                step=step, offset=offset)
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
     # forward and backward
@@ -448,6 +443,10 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
+        # create training data, randomize the offset between steps
+        X_train, y_train = get_data(sequence, input_len, mapping=mapping,
+                                    sentence_length=sentence_length, step=step,
+                                    offset=np.random.randint(0, step-1))
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
