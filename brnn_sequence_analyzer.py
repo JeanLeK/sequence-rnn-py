@@ -267,7 +267,7 @@ def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40, step=3,
     next_ids = []
 
     # creat batch data and next sentences
-    for i in range(0, len(sequence) - sentence_length, step):
+    for i in range(offset, len(sequence) - offset - sentence_length, step):
         X_sentences.append(sequence[i : i + sentence_length])
         if mapping == 'o2o':
             # if mapping is one-to-one

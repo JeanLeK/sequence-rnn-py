@@ -383,44 +383,45 @@ def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
         y_train = np.zeros((batch_size, sentence_length, vocab_size),
                            dtype=np.bool)
 
-    # creat batch data and next sentences
-    for i in range(0, len(sequence) - sentence_length, step):
-        # index of a this sample in this batch
-        batch_index = sample_count % batch_size
+    # continuousy creat batch data and next sentences
+    while True:
+        for i in range(offset, len(sequence) - offset - sentence_length, step):
+            # index of a this sample in this batch
+            batch_index = sample_count % batch_size
 
-        # re-initialzing the batch
-        if batch_size == 0:
-            X_train.fill(0)
-            y_train.fill(0)
+            # re-initialzing the batch
+            if batch_size == 0:
+                X_train.fill(0)
+                y_train.fill(0)
 
-        # current sample and target outputs
-        X_sentence = []
-        y_sentence = []
-        next_id = []
+            # current sample and target outputs
+            X_sentence = []
+            y_sentence = []
+            next_id = []
 
-        X_sentence = sequence[i : i + sentence_length]
-        if mapping == 'o2o':
+            X_sentence = sequence[i : i + sentence_length]
+            if mapping == 'o2o':
+                # if mapping is one-to-one
+                next_id = sequence[i + sentence_length]
+            elif mapping == 'm2m':
+                # if mapping is many-to-many
+                y_sentence = sequence[i + 1 : i + sentence_length + 1]
+
+            for t, id_ in enumerate(X_sentence):
+                # mark the each corresponding character in a sentence as 1
+                X_train[batch_index, t, id_] = 1
+                # if mapping is many-to-many
+                if mapping == 'm2m':
+                    y_train[batch_index, t, y_sentence[t]] = 1
             # if mapping is one-to-one
-            next_id = sequence[i + sentence_length]
-        elif mapping == 'm2m':
-            # if mapping is many-to-many
-            y_sentence = sequence[i + 1 : i + sentence_length + 1]
+            # mark the corresponding character in expected output as 1
+            if mapping == 'o2o':
+                y_train[batch_index, next_id] = 1
 
-        for t, id_ in enumerate(X_sentence):
-            # mark the each corresponding character in a sentence as 1
-            X_train[batch_index, t, id_] = 1
-            # if mapping is many-to-many
-            if mapping == 'm2m':
-                y_train[batch_index, t, y_sentence[t]] = 1
-        # if mapping is one-to-one
-        # mark the corresponding character in expected output as 1
-        if mapping == 'o2o':
-            y_train[batch_index, next_id] = 1
+            # sample count plus 1
+            sample_count += 1
 
-        # sample count plus 1
-        sample_count += 1
-
-        yield X_train, y_train
+            yield X_train, y_train
 
 
 def print_save_losses(history):
@@ -513,9 +514,8 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 
 def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
-          validation_split=0.1, show_accuracy=True, nb_iterations=40,
-          nb_predictions=100, mapping='o2o', sentence_length=40, step=3,
-          mode='train'):
+          show_accuracy=True, nb_iterations=40, nb_predictions=100,
+          mapping='o2o', sentence_length=40, step=3, mode='train'):
     """
     Trains the network and outputs the generated new sequence.
 
