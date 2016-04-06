@@ -78,6 +78,8 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
 
 - **sentence length**: *the length of each data stream, which is also the limit at which the gradients can propagate backwards in time. For example, if seq_length is 20, then the gradient signal will never backpropagate more than 20 time steps, and the model might not find dependencies longer than this length in number of characters.* This is actually the limitation of the model's long term memory. *Thus, if you have a very difficult dataset where there are a lot of long-term dependencies, you will want to increase this setting.*
 
+- **offset during sampling**: offset is the start index when sampling the X_train and y_train from original sequence.
+
 - **overall data size** (#hidden layer and size -> #parameters):
  - #layers: the number of layers, [here](https://github.com/karpathy/char-rnn) suggests that always use num_layers of either 2 or 3.
  - layer size: the number of units per layer.
@@ -92,7 +94,7 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
 
 - **[dropout](http://keras.io/layers/core/#dropout)**: an float between 0 and 1, indicating how much percentage of the hidden layer data are ignored when feeding to next layer. It is a powerful regularization method and mainly used for avoiding overfitting. If your model is overfitting, it better to increase the value of dropout.
 
-- **reinforcement learning function (sample)**: The *temperature* parameter is dividing the predicted log probabilities before the *[Softmax](https://en.wikipedia.org/wiki/Softmax_function)*, so lower temperature will cause the model to make more likely, but also more boring and conservative predictions. Higher temperatures cause the model to take more chances and increase diversity of results, but at a cost of more mistakes.
+- **reinforcement learning function**: The *temperature* parameter is dividing the predicted log probabilities before the *[Softmax](https://en.wikipedia.org/wiki/Softmax_function)*, so lower temperature will cause the model to make more likely, but also more boring and conservative predictions. Higher temperatures cause the model to take more chances and increase diversity of results, but at a cost of more mistakes.
 
 - **loss function**: [categorical_crossentropy](http://keras.io/objectives/)
 
