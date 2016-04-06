@@ -404,7 +404,7 @@ def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
             batch_index = sample_count % batch_size
 
             # re-initialzing the batch
-            if batch_size == 0:
+            if batch_index == 0:
                 X_train.fill(0)
                 y_train.fill(0)
 
@@ -435,7 +435,8 @@ def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
             # sample count plus 1
             sample_count += 1
 
-            yield X_train, y_train
+            if batch_index == batch_size-1:
+                yield X_train, y_train
 
 
 def print_save_losses(history):
