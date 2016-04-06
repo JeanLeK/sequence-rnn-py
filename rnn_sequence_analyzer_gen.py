@@ -56,6 +56,9 @@ class SequenceAnalyzer(object):
         softmax activation, cross entropy loss and rmsprop optimizer.
 
         Arguments:
+            layer: {string}, the type of the layers in the RNN Model.
+                'LSTM': LSTM layers
+                'GRU': GRU layers
             mapping: {string}, input to output mapping.
                 'o2o': one-to-one
                 'm2m': many-to-many
@@ -78,29 +81,31 @@ class SequenceAnalyzer(object):
                 """
                 pass
 
-        # check whether the last layer return sequences
+        # check whether return sequence for each of the layers
+        return_sequences = []
         if mapping == 'o2o':
             # if mapping is one-to-one
-            return_sequences = False
+            for nl in range(nb_layers):
+                if nl == nb_layers-1:
+                    return_sequences.append(False)
+                else:
+                    return_sequences.append(True)
         elif mapping == 'm2m':
             # if mapping is many-to-many
-            return_sequences = True
+            for _ in range(nb_layers):
+                return_sequences.append(True)
 
-        # 2 layer RNN with specified number of nodes in the hidden layer.
-        self.model.add(LAYER(self.hidden_len, return_sequences=True,
+        # first layer RNN with specified number of nodes in the hidden layer.
+        self.model.add(LAYER(self.hidden_len,
+                             return_sequences=return_sequences[0],
                              input_shape=(self.sentence_length,
                                           self.input_len)))
         self.model.add(Dropout(dropout))
 
+        # the following layers
         for nl in range(nb_layers-1):
-            # check whether return sequences
-            if nl != nb_layers-2:
-                return_sequences_ = True
-            else:
-                return_sequences_ = return_sequences
-            # build hidden layers
             self.model.add(LAYER(self.hidden_len,
-                                 return_sequences=return_sequences_))
+                                 return_sequences=return_sequences[nl+1]))
             self.model.add(Dropout(dropout))
 
         if mapping == 'o2o':
@@ -222,7 +227,7 @@ def get_sequence(filename):
 
 
 def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
-                   step=3, offset=0, batch_size=128):
+                   step=3, offset=0, batch_size=64):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
     This method returns a data generator yeilding a batch of (X_train, y_train)
@@ -388,9 +393,9 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
     print "\n"
 
 
-def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
-          show_accuracy=True, nb_iterations=40, nb_predictions=100,
-          mapping='o2o', sentence_length=40, step=40, mode='train'):
+def train(hidden_len=512, batch_size=32, nb_batch=80, nb_epoch=1,
+          show_accuracy=True, nb_iterations=100, nb_predictions=100,
+          mapping='m2m', sentence_length=40, step=40, mode='train'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -419,10 +424,10 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    rnn.build(layer='LSTM', mapping=mapping)
+    rnn.build(layer='LSTM', mapping=mapping, nb_layers=1, dropout=0.2)
 
     # plot model
-    rnn.plot_model()
+    # rnn.plot_model()
 
     # load the previous model weights
     # rnn.load_model("weights4.hdf5")
@@ -464,7 +469,7 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
                                 show_accuracy=show_accuracy,
                                 callbacks=[history, checkpointer],
                                 validation_data=val_data,
-                                nb_val_samples=400)
+                                nb_val_samples=128)
 
         # start index of the seed, random number in range
         start_index = np.random.randint(0, len(sequence) - sentence_length - 1)

@@ -21,7 +21,7 @@ import csv
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers.core import Dense, Dropout
+from keras.layers.core import Dense, TimeDistributedDense, Dropout
 from keras.layers.recurrent import LSTM, GRU
 from keras.models import Graph
 from keras.optimizers import RMSprop
@@ -81,23 +81,32 @@ class SequenceAnalyzer(object):
                 """
                 pass
 
-        # check whether the last layer return sequences
+        # check whether return sequence for each of the layers
+        return_sequences = []
         if mapping == 'o2o':
             # if mapping is one-to-one
-            return_sequences = False
+            for nl in range(nb_layers):
+                if nl == nb_layers-1:
+                    return_sequences.append(False)
+                else:
+                    return_sequences.append(True)
         elif mapping == 'm2m':
             # if mapping is many-to-many
-            return_sequences = True
+            for _ in range(nb_layers):
+                return_sequences.append(True)
 
+        # add input
         self.model.add_input(input_shape=(self.sentence_length, self.input_len),
                              name='input', dtype='float')
 
         # first Bi-directional LSTM layer
-        self.model.add_node(LAYER(self.hidden_len, return_sequences=True),
+        self.model.add_node(LAYER(self.hidden_len,
+                                  return_sequences=return_sequences[0]),
                             name='forward1', input='input')
         self.model.add_node(Dropout(dropout),
                             name='forward_dropout1', input='forward1')
-        self.model.add_node(LAYER(self.hidden_len, return_sequences=True,
+        self.model.add_node(LAYER(self.hidden_len,
+                                  return_sequences=return_sequences[0],
                                   go_backwards=True),
                             name='backward1', input='input')
         self.model.add_node(Dropout(dropout),
@@ -105,21 +114,15 @@ class SequenceAnalyzer(object):
 
         # following Bi-directional layers
         for nl in range(nb_layers-1):
-            # check whether return sequences
-            if nl != nb_layers-2:
-                return_sequences_ = True
-            else:
-                return_sequences_ = return_sequences
-            # build following hidden layers
             self.model.add_node(LAYER(self.hidden_len,
-                                      return_sequences=return_sequences_),
+                                      return_sequences=return_sequences[nl+1]),
                                 name='forward' + str(nl+2),
                                 input='forward_dropout' + str(nl+1))
             self.model.add_node(Dropout(dropout),
                                 name='forward_dropout' + str(nl+2),
                                 input='forward' + str(nl+2))
             self.model.add_node(LAYER(self.hidden_len,
-                                      return_sequences=return_sequences_,
+                                      return_sequences=return_sequences[nl+1],
                                       go_backwards=True),
                                 name='backward' + str(nl+2),
                                 input='backward_dropout' + str(nl+1))
@@ -129,10 +132,19 @@ class SequenceAnalyzer(object):
 
         # self.model.add_node(Dropout(dropout), name='dropout',
                             # inputs=['forward', 'backward'])
-        self.model.add_node(Dense(self.output_len, activation='softmax'),
-                            name='softmax',
-                            inputs=['forward_dropout' + str(nb_layers),
-                                    'backward_dropout' + str(nb_layers)])
+        if mapping == 'o2o':
+            self.model.add_node(Dense(self.output_len, activation='softmax'),
+                                name='softmax',
+                                inputs=['forward_dropout' + str(nb_layers),
+                                        'backward_dropout' + str(nb_layers)])
+        elif mapping == 'm2m':
+            self.model.add_node(TimeDistributedDense(self.output_len,
+                                                     activation='softmax'),
+                                name='softmax',
+                                inputs=['forward_dropout' + str(nb_layers),
+                                        'backward_dropout' + str(nb_layers)])
+
+        # add ouput
         self.model.add_output(name='output', input='softmax')
 
         # try using different optimizers and different optimizer configs

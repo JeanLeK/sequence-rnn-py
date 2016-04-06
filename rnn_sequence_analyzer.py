@@ -79,29 +79,31 @@ class SequenceAnalyzer(object):
                 """
                 pass
 
-        # check whether the last layer return sequences
+        # check whether return sequence for each of the layers
+        return_sequences = []
         if mapping == 'o2o':
             # if mapping is one-to-one
-            return_sequences = False
+            for nl in range(nb_layers):
+                if nl == nb_layers-1:
+                    return_sequences.append(False)
+                else:
+                    return_sequences.append(True)
         elif mapping == 'm2m':
             # if mapping is many-to-many
-            return_sequences = True
+            for _ in range(nb_layers):
+                return_sequences.append(True)
 
-        # 2 layer RNN layers with specified number of nodes in the hidden layer.
-        self.model.add(LAYER(self.hidden_len, return_sequences=True,
+        # first layer RNN with specified number of nodes in the hidden layer.
+        self.model.add(LAYER(self.hidden_len,
+                             return_sequences=return_sequences[0],
                              input_shape=(self.sentence_length,
                                           self.input_len)))
         self.model.add(Dropout(dropout))
 
+        # the following layers
         for nl in range(nb_layers-1):
-            # check whether return sequences
-            if nl != nb_layers-2:
-                return_sequences_ = True
-            else:
-                return_sequences_ = return_sequences
-            # build hidden layers
             self.model.add(LAYER(self.hidden_len,
-                                 return_sequences=return_sequences_))
+                                 return_sequences=return_sequences[nl+1]))
             self.model.add(Dropout(dropout))
 
         if mapping == 'o2o':
@@ -410,10 +412,10 @@ def train(hidden_len=512, batch_size=32, nb_epoch=1, validation_split=0.05,
     rnn.build(layer='LSTM', mapping=mapping, nb_layers=1, dropout=0.2)
 
     # plot model
-    rnn.plot_model()
+    # rnn.plot_model()
 
     # load the previous model weights
-    rnn.load_model("weightsd2.hdf5")
+    # rnn.load_model("weightsd2.hdf5")
 
     if mode == 'predict':
         predict(sequence, input_len, rnn, nb_predictions=nb_predictions,
