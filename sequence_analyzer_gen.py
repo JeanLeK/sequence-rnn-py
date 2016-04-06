@@ -578,6 +578,10 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
                 mapping=mapping, sentence_length=sentence_length)
         return mode
 
+    # number of training sampes and validation samples
+    nb_training_samples = batch_size * nb_batch
+    nb_validation_samples = int(nb_training_samples * 0.05)
+
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
         # data generator of X_train and y_train, with random offset
@@ -605,12 +609,12 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
 
         # train the model with data generator
         analyzer.model.fit_generator(train_data,
-                                     samples_per_epoch=batch_size * nb_batch,
+                                     samples_per_epoch=nb_training_samples,
                                      nb_epoch=nb_epoch, verbose=1,
                                      show_accuracy=show_accuracy,
                                      callbacks=[history, checkpointer],
                                      validation_data=val_data,
-                                     nb_val_samples=400)
+                                     nb_val_samples=nb_validation_samples)
 
         # start index of the seed, random number in range
         start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
