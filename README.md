@@ -78,7 +78,7 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
 
 - **sentence length**: *the length of each data stream, which is also the limit at which the gradients can propagate backwards in time. For example, if seq_length is 20, then the gradient signal will never backpropagate more than 20 time steps, and the model might not find dependencies longer than this length in number of characters.* This is actually the limitation of the model's long term memory. *Thus, if you have a very difficult dataset where there are a lot of long-term dependencies, you will want to increase this setting.*
 
-- **offset during sampling**: offset is the start index when sampling the X_train and y_train from original sequence.
+- **offset during sampling**: offset is the start index when sampling the X_train and y_train from original sequence. The offset can be fixed value or random value ranging between 0 ~ step-1.
 
 - **overall data size** (#hidden layer and size -> #parameters):
  - #layers: the number of layers, [here](https://github.com/karpathy/char-rnn) suggests that always use num_layers of either 2 or 3.
