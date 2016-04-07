@@ -188,7 +188,7 @@ class History(Callback):
     Record the loss and accuracy history.
     """
     @override
-    def on_train_begin(self, logs={}):
+    def on_train_begin(self, logs={}): # pylint: disable=W0102
         """
         A method starting at the begining of the training.
 
@@ -204,7 +204,7 @@ class History(Callback):
         self.val_acc = []
 
     @override
-    def on_epoch_end(self, epoch, logs={}):
+    def on_epoch_end(self, epoch, logs={}): # pylint: disable=W0102
         """
         A method starting at the begining of the training.
 
