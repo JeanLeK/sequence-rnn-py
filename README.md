@@ -68,7 +68,7 @@ Two good materials:
 - [CHAPTER 3: Improving the way neural networks learn](http://neuralnetworksanddeeplearning.com/chap3.html) from [Michael Nielsen](http://michaelnielsen.org/)
 - [Neural Networks Part 2: Setting up the Data and the Loss](http://cs231n.github.io/neural-networks-2/) and [Neural Networks Part 3: Learning and Evaluation](http://cs231n.github.io/neural-networks-3/) from Stanford CS class [CS231n: Convolutional Neural Networks for Visual Recognition](http://cs231n.github.io/)
 
-considerations:
+Considerations:
 
 - **Batch Size**: how many streams of data are processed in parallel at one time.
 
@@ -104,7 +104,7 @@ considerations:
  - That is 3 million parameters for only one layer!
 
 
-- **Learning Rate**: This ratio (percentage) influences the speed (step of the gradient descent) and quality of learning. The greater the ratio, the faster the neuron trains; the lower the ratio, the more accurate the training is. Acoording to [LSTM: A Search Space Odyssey](http://arxiv.org/pdf/1503.04069v1.pdf) [\[1\]](https://github.com/fluency03/sequence-rnn-py#1-greff-klaus-rupesh-kumar-srivastava-jan-koutník-bas-r-steunebrink-and-jürgen-schmidhuber-lstm-a-search-space-odyssey-arxiv-preprint-arxiv150304069-2015):
+- **Learning Rate**: This ratio (percentage) influences the speed (step of the gradient descent) and quality of learning. The greater the ratio, the faster the neuron trains; the lower the ratio, the more accurate the training is. According to [LSTM: A Search Space Odyssey](http://arxiv.org/pdf/1503.04069v1.pdf) [\[1\]](https://github.com/fluency03/sequence-rnn-py#1-greff-klaus-rupesh-kumar-srivastava-jan-koutník-bas-r-steunebrink-and-jürgen-schmidhuber-lstm-a-search-space-odyssey-arxiv-preprint-arxiv150304069-2015):
 > The learning rate is by far the most important hyperparameter. And based on their suggestion, while searching for a good learning rate for the LSTM, it is sufficient to do a coarse search by starting with a high value (e.g. 1.0) and dividing it by ten until performance stops increasing.
 
 
