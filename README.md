@@ -95,7 +95,10 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
  **How to calculate the number of parameters in RNN?** For example, consider one layer of LSTM:
  - if it has the layer size of ***H=512***;
  - if we have the vocabulary size as ***C=3000*** (the number of unique classes);
- - the LSTM layer will have three parameter matrix: <img src="http://www.sciweavers.org/tex2img.php?eq=U%5Cin%20%5Cmathbb%7BR%7D%5E%7BH%5Ctimes%20C%7D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="U\in \mathbb{R}^{H\times C}" width="236" height="18" />    <img src="http://www.sciweavers.org/tex2img.php?eq=V%5Cin%20%5Cmathbb%7BR%7D%5E%7BC%5Ctimes%20H%7D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V\in \mathbb{R}^{C\times H}" width="236" height="18" />  <img src="http://www.sciweavers.org/tex2img.php?eq=W%5Cin%20%5Cmathbb%7BR%7D%5E%7BH%5Ctimes%20H%7D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="W\in \mathbb{R}^{H\times H}" width="236" height="18" />
+ - the LSTM layer will have three parameter matrix:
+ <img src="http://www.sciweavers.org/tex2img.php?eq=U%5Cin%20%5Cmathbb%7BR%7D%5E%7BH%5Ctimes%20C%7D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="U\in \mathbb{R}^{H\times C}" width="236" height="18" />    
+ <img src="http://www.sciweavers.org/tex2img.php?eq=V%5Cin%20%5Cmathbb%7BR%7D%5E%7BC%5Ctimes%20H%7D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V\in \mathbb{R}^{C\times H}" width="236" height="18" />  
+ <img src="http://www.sciweavers.org/tex2img.php?eq=W%5Cin%20%5Cmathbb%7BR%7D%5E%7BH%5Ctimes%20H%7D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="W\in \mathbb{R}^{H\times H}" width="236" height="18" />
  - the total number of parameter for one layer will be: ***2HC + H^2***, which is 3,334,144 in this case.
  - That is 3 million parameters for only one layer!
 
