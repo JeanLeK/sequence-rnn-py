@@ -71,19 +71,19 @@ Two good materials:
 
 According to [char-rnn](https://github.com/karpathy/char-rnn):
 
-- **batch size**: how many streams of data are processed in parallel at one time.
+- **Batch Size**: how many streams of data are processed in parallel at one time.
 
 
-- **samples per epoch** and **batches per epoch**: how many samples or batches considered per epoch. Based on some of my experiments: (i) the more #samples there are, the higher the accuracy can reach at the stable stage and the less the loss can be at the stable stage; (ii) the more #batches (integer ratio of #sample/batch_size) there are, the higher the accuracy can reach at table stage and the less the loss can be at stable stage and the less iterations it will take to reach the same loss/accuracy value.
+- **Samples per epoch** and **Batches per epoch**: how many samples or batches considered per epoch. Based on some of my experiments: (i) the more #samples there are, the higher the accuracy can reach at the stable stage and the less the loss can be at the stable stage; (ii) the more #batches (integer ratio of #sample/batch_size) there are, the higher the accuracy can reach at table stage and the less the loss can be at stable stage and the less iterations it will take to reach the same loss/accuracy value.
 
 
-- **sentence length**: *the length of each data stream, which is also the limit at which the gradients can propagate backwards in time. For example, if seq_length is 20, then the gradient signal will never backpropagate more than 20 time steps, and the model might not find dependencies longer than this length in number of characters.* This is actually the limitation of the model's long term memory. *Thus, if you have a very difficult dataset where there are a lot of long-term dependencies, you will want to increase this setting.*
+- **Sentence Length**: *the length of each data stream, which is also the limit at which the gradients can propagate backwards in time. For example, if seq_length is 20, then the gradient signal will never backpropagate more than 20 time steps, and the model might not find dependencies longer than this length in number of characters.* This is actually the limitation of the model's long term memory. *Thus, if you have a very difficult dataset where there are a lot of long-term dependencies, you will want to increase this setting.*
 
 
-- **offset during sampling**: offset is the start index when sampling the X_train and y_train from original sequence. The offset can be fixed value or random value ranging between 0 ~ step-1.
+- **Offset during sampling**: offset is the start index when sampling the X_train and y_train from original sequence. The offset can be fixed value or random value ranging between 0 ~ step-1.
 
 
-- **overall data size** (#hidden layer and size -> #parameters):
+- **Data size vs. #parameters** in total:
  - #layers: the number of layers, [here](https://github.com/karpathy/char-rnn) suggests that always use num_layers of either 2 or 3.
  - layer size: the number of units per layer.
 
@@ -92,26 +92,27 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
  - The size of your dataset.
  These two should be about the same order of magnitude.
 
- **How to calculate the number of parameters in RNN?** For example:
- - if we only consider one layer of LSTM with layer size of **H=512**;
- - if we have the vocabulary size as **C=3000** (the number of unique classes);
- - the LSTM layer will have three parameter matrix - **U** with dimension (H, C) i.e. **(512, 3000)**, **V** with dimension (C, H) i.e. **(3000, 512)**, **W** with dimension (H, H) i.e. **(512, 512)**;
- - the total number of parameter for one layer will be: **2HC + H^2**, which is 3,334,144 in this case.
+ **How to calculate the number of parameters in RNN?** For example, consider one layer of LSTM:
+ - if it has the layer size of ***H=512***;
+ - if we have the vocabulary size as ***C=3000*** (the number of unique classes);
+ - the LSTM layer will have three parameter matrix - ***U*** with dimension (H, C) i.e. **(512, 3000)**, ***V*** with dimension (C, H) i.e. **(3000, 512)**, ***W*** with dimension (H, H) i.e. **(512, 512)**;
+ - the total number of parameter for one layer will be: ***2HC + H^2***, which is 3,334,144 in this case.
+ - That is 3 million parameters for only one layer!
 
 
-- **learning rate**: This ratio (percentage) influences the speed (step of the gradient descent) and quality of learning. The greater the ratio, the faster the neuron trains; the lower the ratio, the more accurate the training is. Acoording to [LSTM: A Search Space Odyssey](http://arxiv.org/pdf/1503.04069v1.pdf) [\[1\]](https://github.com/fluency03/sequence-rnn-py#1-greff-klaus-rupesh-kumar-srivastava-jan-koutník-bas-r-steunebrink-and-jürgen-schmidhuber-lstm-a-search-space-odyssey-arxiv-preprint-arxiv150304069-2015), *the learning rate is by far the most important hyperparameter*. And based on their suggestion, *while searching for a good learning rate for the LSTM, it is sufficient to do a coarse search by starting with a high value (e.g. 1.0) and dividing it by ten until performance stops increasing.*
+- **Learning Rate**: This ratio (percentage) influences the speed (step of the gradient descent) and quality of learning. The greater the ratio, the faster the neuron trains; the lower the ratio, the more accurate the training is. Acoording to [LSTM: A Search Space Odyssey](http://arxiv.org/pdf/1503.04069v1.pdf) [\[1\]](https://github.com/fluency03/sequence-rnn-py#1-greff-klaus-rupesh-kumar-srivastava-jan-koutník-bas-r-steunebrink-and-jürgen-schmidhuber-lstm-a-search-space-odyssey-arxiv-preprint-arxiv150304069-2015), *the learning rate is by far the most important hyperparameter*. And based on their suggestion, *while searching for a good learning rate for the LSTM, it is sufficient to do a coarse search by starting with a high value (e.g. 1.0) and dividing it by ten until performance stops increasing.*
 
 
-- **[dropout](http://keras.io/layers/core/#dropout)**: an float between 0 and 1, indicating how much percentage of the hidden layer data are ignored when feeding to next layer. It is a powerful regularization method and mainly used for avoiding overfitting. If your model is overfitting, it better to increase the value of dropout.
+- **[Dropout](http://keras.io/layers/core/#dropout)**: an float between 0 and 1, indicating how much percentage of the hidden layer data are ignored when feeding to next layer. It is a powerful regularization method and mainly used for avoiding overfitting. If your model is overfitting, it better to increase the value of dropout.
 
 
-- **reinforcement learning function**: The *temperature* parameter is dividing the predicted log probabilities before the *[Softmax](https://en.wikipedia.org/wiki/Softmax_function)*, so lower temperature will cause the model to make more likely, but also more boring and conservative predictions. Higher temperatures cause the model to take more chances and increase diversity of results, but at a cost of more mistakes.
+- **Reinforcement learning function**: The *temperature* parameter is dividing the predicted log probabilities before the *[Softmax](https://en.wikipedia.org/wiki/Softmax_function)*, so lower temperature will cause the model to make more likely, but also more boring and conservative predictions. Higher temperatures cause the model to take more chances and increase diversity of results, but at a cost of more mistakes.
 
 
-- **loss function**: [categorical_crossentropy](http://keras.io/objectives/)
+- **Loss function**: [categorical_crossentropy](http://keras.io/objectives/)
 
 
-- **optimizer**: [RMSprop](http://keras.io/optimizers/#rmsprop), you can try other options like simple [SGD](http://keras.io/optimizers/#sgd), [Adagrad](http://keras.io/optimizers/#adagrad) and [Adam](http://keras.io/optimizers/#adam).
+- **Optimizer**: [RMSprop](http://keras.io/optimizers/#rmsprop), you can try other options like simple [SGD](http://keras.io/optimizers/#sgd), [Adagrad](http://keras.io/optimizers/#adagrad) and [Adam](http://keras.io/optimizers/#adam).
 
 
 ## Reference
