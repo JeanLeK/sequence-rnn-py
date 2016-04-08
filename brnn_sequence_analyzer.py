@@ -252,6 +252,7 @@ def get_sequence(filepath):
     seqfiles = glob.glob(filepath)
 
     for seqfile in seqfiles:
+        print "        " + seqfile
         with open(seqfile, 'r') as f:
             sequence = [int(id_) for id_ in f]
 
@@ -413,7 +414,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
     print "\n"
 
 
-def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.1,
+def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.05,
           show_accuracy=True, nb_iterations=40, nb_predictions=100,
           mapping='o2o', sentence_length=40, step=3, mode='train'):
     """

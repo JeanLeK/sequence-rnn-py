@@ -220,6 +220,7 @@ def get_sequence(filepath):
     seqfiles = glob.glob(filepath)
 
     for seqfile in seqfiles:
+        print "        " + seqfile
         with open(seqfile, 'r') as f:
             sequence = [int(id_) for id_ in f]
 

@@ -222,6 +222,7 @@ def get_sequence(filepath):
     seqfiles = glob.glob(filepath)
 
     for seqfile in seqfiles:
+        print "        " + seqfile
         with open(seqfile, 'r') as f:
             sequence = [int(id_) for id_ in f]
 
@@ -400,8 +401,9 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 
 def train(hidden_len=512, batch_size=32, nb_batch=80, nb_epoch=1,
-          show_accuracy=True, nb_iterations=100, nb_predictions=100,
-          mapping='m2m', sentence_length=40, step=40, mode='train'):
+          validation_split=0.05, show_accuracy=True, nb_iterations=100,
+          nb_predictions=100, mapping='m2m', sentence_length=40, step=40,
+          mode='train'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -410,6 +412,8 @@ def train(hidden_len=512, batch_size=32, nb_batch=80, nb_epoch=1,
         batch_size: {interger}, the number of sentences per batch.
         nb_batch: {integer}, number of batches to be trained durign each epoch.
         nb_epoch: {interger}, number of epoches per iteration.
+        validation_split: {float} (0 ~ 1), the ratio in percentage of validation
+            data over training data.
         show_accuracy: {boolean}, show accuracy during training.
         nb_iterations: {integer}, number of iterations.
         nb_predictions: {integer}, number of the ids predicted.
@@ -433,7 +437,7 @@ def train(hidden_len=512, batch_size=32, nb_batch=80, nb_epoch=1,
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    rnn.build(layer='LSTM', mapping=mapping, nb_layers=1, dropout=0.2)
+    rnn.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)
 
     # plot model
     # rnn.plot_model()
@@ -448,7 +452,7 @@ def train(hidden_len=512, batch_size=32, nb_batch=80, nb_epoch=1,
 
     # number of training sampes and validation samples
     nb_training_samples = batch_size * nb_batch
-    nb_validation_samples = int(nb_training_samples * 0.05)
+    nb_validation_samples = int(nb_training_samples * validation_split)
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
