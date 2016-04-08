@@ -17,6 +17,8 @@ Author: Chang Liu (fluency03)
 Data: 2016-03-27
 """
 
+import glob
+# import os
 import sys
 import csv
 import numpy as np
@@ -25,7 +27,7 @@ from keras.callbacks import Callback, ModelCheckpoint
 from keras.layers.core import Activation, Dense, TimeDistributedDense, Dropout
 from keras.layers.recurrent import LSTM, GRU
 from keras.models import Sequential, Graph
-from keras.optimizers import RMSprop
+# from keras.optimizers import RMSprop
 from keras.utils.visualize_util import plot
 
 
@@ -338,7 +340,7 @@ def sample(prob, temperature=0.2):
     return np.argmax(np.random.multinomial(1, prob, 1))
 
 
-def get_sequence(filename):
+def get_sequence(filepath):
     """
     Get the original sequence from file.
 
@@ -349,8 +351,11 @@ def get_sequence(filename):
         {integer}, the size of vocabulary.
     """
     # read file and convert ids of each line into array of numbers
-    with open(filename, 'r') as f:
-        sequence = [int(id_) for id_ in f]
+    seqfiles = glob.glob(filepath)
+
+    for seqfile in seqfiles:
+        with open(seqfile, 'r') as f:
+            sequence = [int(id_) for id_ in f]
 
     # add two extra positions for 'unknown-log' and 'no-log'
     vocab_size = max(sequence) + 2
@@ -536,8 +541,11 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
             'predict': only predict by loading existing model weights
     """
     # get parameters and dimensions of the model
-    print "Loading data..."
-    sequence, input_len = get_sequence("/home/cliu/Documents/SC-1/sequence")
+    print "Loading training data..."
+    train_sequence, input_len1 = get_sequence("./train_data/*")
+    print "Loading validation data..."
+    val_sequence, input_len2 = get_sequence("./validation_data/*")
+    input_len = max(input_len1, input_len2)
 
     # check model type: urnn or brnn
     if model == 'urnn':
@@ -556,16 +564,20 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
     # analyzer.load_model("weights.hdf5")
 
     if mode == 'predict':
-        predict(sequence, input_len, analyzer, nb_predictions=nb_predictions,
+        predict(val_sequence, input_len, analyzer,
+                nb_predictions=nb_predictions,
                 mapping=mapping, sentence_length=sentence_length)
         return mode
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
         # create training data, randomize the offset between steps
-        X_train, y_train = get_data(sequence, input_len, mapping=mapping,
+        X_train, y_train = get_data(train_sequence, input_len, mapping=mapping,
                                     sentence_length=sentence_length, step=step,
                                     offset=np.random.randint(0, step-1))
+        X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length, step=step,
+                                offset=np.random.randint(0, step-1))
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
@@ -579,13 +591,15 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
                                        verbose=1, save_best_only=True)
 
         # train the model
-        analyzer.model.fit(X_train, y_train, validation_split=validation_split,
-                           batch_size=batch_size, nb_epoch=nb_epoch,
-                           show_accuracy=show_accuracy, verbose=1,
-                           callbacks=[history, checkpointer])
+        analyzer.model.fit(X_train, y_train,
+                           batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
+                           callbacks=[history, checkpointer],
+                           validation_data=(X_val, y_val),
+                           show_accuracy=show_accuracy)
 
         # start index of the seed, random number in range
-        start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
+        start_index = np.random.randint(0,
+                                        len(train_sequence)-sentence_length-1)
 
         # the Temperature option list
         t_list = [0.2]
@@ -593,7 +607,7 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
         # predict
         for T in t_list:
             print "------------Temperature: %.2f" %T
-            sentence = sequence[start_index:start_index + sentence_length]
+            sentence = train_sequence[start_index:start_index + sentence_length]
             # print sentence
             generated = sentence
             print "With seed: " + ' '.join(str(s) for s in sentence) + '\n'

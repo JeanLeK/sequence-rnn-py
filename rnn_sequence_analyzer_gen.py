@@ -423,8 +423,9 @@ def train(hidden_len=512, batch_size=32, nb_batch=80, nb_epoch=1,
             'predict': only predict by loading existing model weights
     """
     # get parameters and dimensions of the model
-    print "Loading data..."
+    print "Loading training data..."
     train_sequence, input_len1 = get_sequence("./train_data/*")
+    print "Loading validation data..."
     val_sequence, input_len2 = get_sequence("./validation_data/*")
     input_len = max(input_len1, input_len2)
 
