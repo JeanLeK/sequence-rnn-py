@@ -59,7 +59,7 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 
 
 
-## Training (TODO: considerations)
+## Training
 
 This [hyperas](https://github.com/maxpumperla/hyperas) may help. It is *A very simple convenience wrapper around [hyperopt](https://github.com/hyperopt/hyperopt) for fast prototyping with keras models.* It is used for hyper-parameter optimization. An example can be found [here](https://github.com/maxpumperla/hyperas/blob/master/examples/lstm.py).
 
@@ -68,8 +68,7 @@ Two good materials:
 - [CHAPTER 3: Improving the way neural networks learn](http://neuralnetworksanddeeplearning.com/chap3.html) from [Michael Nielsen](http://michaelnielsen.org/)
 - [Neural Networks Part 2: Setting up the Data and the Loss](http://cs231n.github.io/neural-networks-2/) and [Neural Networks Part 3: Learning and Evaluation](http://cs231n.github.io/neural-networks-3/) from Stanford CS class [CS231n: Convolutional Neural Networks for Visual Recognition](http://cs231n.github.io/)
 
-
-According to [char-rnn](https://github.com/karpathy/char-rnn):
+considerations:
 
 - **Batch Size**: how many streams of data are processed in parallel at one time.
 
@@ -77,8 +76,8 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
 - **Samples per epoch** and **Batches per epoch**: how many samples or batches considered per epoch. Based on some of my experiments: (i) the more #samples there are, the higher the accuracy can reach at the stable stage and the less the loss can be at the stable stage; (ii) the more #batches (integer ratio of #sample/batch_size) there are, the higher the accuracy can reach at table stage and the less the loss can be at stable stage and the less iterations it will take to reach the same loss/accuracy value.
 
 
-- **Sentence Length**:
- > the length of each data stream, which is also the limit at which the gradients can propagate backwards in time. For example, if seq_length is 20, then the gradient signal will never backpropagate more than 20 time steps, and the model might not find dependencies longer than this length in number of characters.
+- **Sentence Length**: according to [char-rnn](https://github.com/karpathy/char-rnn):
+ > The length of each data stream, which is also the limit at which the gradients can propagate backwards in time. For example, if seq_length is 20, then the gradient signal will never backpropagate more than 20 time steps, and the model might not find dependencies longer than this length in number of characters.
 
  This is actually the limitation of the model's long term memory.
 
@@ -105,7 +104,8 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
  - That is 3 million parameters for only one layer!
 
 
-- **Learning Rate**: This ratio (percentage) influences the speed (step of the gradient descent) and quality of learning. The greater the ratio, the faster the neuron trains; the lower the ratio, the more accurate the training is. Acoording to [LSTM: A Search Space Odyssey](http://arxiv.org/pdf/1503.04069v1.pdf) [\[1\]](https://github.com/fluency03/sequence-rnn-py#1-greff-klaus-rupesh-kumar-srivastava-jan-koutník-bas-r-steunebrink-and-jürgen-schmidhuber-lstm-a-search-space-odyssey-arxiv-preprint-arxiv150304069-2015), *the learning rate is by far the most important hyperparameter*. And based on their suggestion, *while searching for a good learning rate for the LSTM, it is sufficient to do a coarse search by starting with a high value (e.g. 1.0) and dividing it by ten until performance stops increasing.*
+- **Learning Rate**: This ratio (percentage) influences the speed (step of the gradient descent) and quality of learning. The greater the ratio, the faster the neuron trains; the lower the ratio, the more accurate the training is. Acoording to [LSTM: A Search Space Odyssey](http://arxiv.org/pdf/1503.04069v1.pdf) [\[1\]](https://github.com/fluency03/sequence-rnn-py#1-greff-klaus-rupesh-kumar-srivastava-jan-koutník-bas-r-steunebrink-and-jürgen-schmidhuber-lstm-a-search-space-odyssey-arxiv-preprint-arxiv150304069-2015):
+> The learning rate is by far the most important hyperparameter. And based on their suggestion, while searching for a good learning rate for the LSTM, it is sufficient to do a coarse search by starting with a high value (e.g. 1.0) and dividing it by ten until performance stops increasing.
 
 
 - **[Dropout](http://keras.io/layers/core/#dropout)**: an float between 0 and 1, indicating how much percentage of the hidden layer data are ignored when feeding to next layer. It is a powerful regularization method and mainly used for avoiding overfitting. If your model is overfitting, it better to increase the value of dropout.
