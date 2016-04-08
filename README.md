@@ -97,11 +97,11 @@ According to [char-rnn](https://github.com/karpathy/char-rnn):
  - if we have the vocabulary size as ***C=3000*** (the number of unique classes);
  - the LSTM layer will have three parameter matrix:
 
-    <img src="http://chart.googleapis.com/chart?cht=tx&chl=U\in \mathbb{R}^{H\times C}" style="border:none;">
+    <img src="http://chart.googleapis.com/chart?cht=tx&chl=U\in\mathbb{R}^{H\times C}" style="border:none;">
 
-    <img src="http://chart.googleapis.com/chart?cht=tx&chl=V\in \mathbb{R}^{C\times H}" style="border:none;">
+    <img src="http://chart.googleapis.com/chart?cht=tx&chl=V\in\mathbb{R}^{C\times H}" style="border:none;">
 
-    <img src="http://chart.googleapis.com/chart?cht=tx&chl=W\in \mathbb{R}^{H\times H}" style="border:none;">
+    <img src="http://chart.googleapis.com/chart?cht=tx&chl=W\in\mathbb{R}^{H\times H}" style="border:none;">
 
  - the total number of parameter for one layer will be: ***2HC + H^2***, which is 3,334,144 in this case.
  - That is 3 million parameters for only one layer!
