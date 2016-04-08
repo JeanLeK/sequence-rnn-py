@@ -50,7 +50,7 @@ class SequenceAnalyzer(object):
         self.output_len = output_len
         self.model = Sequential()
 
-    def build(self, layer='LSTM', mapping='o2o', nb_layers=2, dropout=0.2):
+    def build(self, layer='LSTM', mapping='m2m', nb_layers=2, dropout=0.2):
         """
         Stacked RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
@@ -230,8 +230,8 @@ def get_sequence(filepath):
     return sequence, vocab_size
 
 
-def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40, step=3,
-             offset=0):
+def get_data(sequence, vocab_size, mapping='m2m', sentence_length=40, step=3,
+             random_offset=True):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
 
@@ -243,7 +243,7 @@ def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40, step=3,
             'm2m': many-to-many
         sentence_length: {integer}, the length of each training sentence.
         step: {integer}, the sample steps.
-        offset: {integer}, the offset of starting point of sampling.
+        random_offset: {bool}, the offset is random between step or is 0.
     Returns:
         {np.array}, training input data X
         {np.array}, training target data y
@@ -251,6 +251,8 @@ def get_data(sequence, vocab_size, mapping='o2o', sentence_length=40, step=3,
     X_sentences = []
     y_sentences = []
     next_ids = []
+
+    offset = np.random.randint(0, step-1) if random_offset else 0
 
     # creat batch data and next sentences
     for i in range(offset, len(sequence) - offset - sentence_length, step):
@@ -435,10 +437,10 @@ def train(hidden_len=512, batch_size=32, nb_epoch=1, validation_split=0.05,
         # create training data, randomize the offset between steps
         X_train, y_train = get_data(train_sequence, input_len, mapping=mapping,
                                     sentence_length=sentence_length, step=step,
-                                    offset=np.random.randint(0, step-1))
+                                    random_offset=True)
         X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
                                 sentence_length=sentence_length, step=step,
-                                offset=np.random.randint(0, step-1))
+                                random_offset=True)
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration

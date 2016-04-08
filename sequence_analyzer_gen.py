@@ -107,7 +107,7 @@ class URNN(SequenceAnalyzer):
         self.model = Sequential()
 
     @override
-    def build(self, layer='LSTM', mapping='o2o', nb_layers=2, dropout=0.2):
+    def build(self, layer='LSTM', mapping='m2m', nb_layers=2, dropout=0.2):
         """
         Stacked RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
@@ -187,7 +187,7 @@ class BRNN(SequenceAnalyzer):
         self.model = Graph()
 
     @override
-    def build(self, layer='LSTM', mapping='o2o', nb_layers=2, dropout=0.2):
+    def build(self, layer='LSTM', mapping='m2m', nb_layers=2, dropout=0.2):
         """
         Bidirectional RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
@@ -366,8 +366,8 @@ def get_sequence(filepath):
     return sequence, vocab_size
 
 
-def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
-                   step=3, offset=0, batch_size=128):
+def data_generator(sequence, vocab_size, mapping='m2m', sentence_length=40,
+                   step=3, random_offset=True, batch_size=128):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
     This method returns a data generator yeilding a batch of (X_train, y_train)
@@ -381,7 +381,7 @@ def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
             'm2m': many-to-many
         sentence_length: {integer}, the length of each training sentence.
         step: {integer}, the sample steps.
-        offset: {integer}, the offset of starting point of sampling.
+        random_offset: {bool}, the offset is random between step or is 0.
         batch_size: {integer}, the number of sample per batch.
     Yields:
         {np.array}, training input data X
@@ -405,6 +405,7 @@ def data_generator(sequence, vocab_size, mapping='o2o', sentence_length=40,
 
     # continuousy creat batch data and next sentences
     while True:
+        offset = np.random.randint(0, step-1) if random_offset else 0
         for i in range(offset, len(sequence) - offset - sentence_length, step):
             # index of a this sample in this batch
             batch_index = sample_count % batch_size
@@ -536,7 +537,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
           validation_split=0.05, show_accuracy=True, nb_iterations=40,
-          nb_predictions=100, mapping='o2o', sentence_length=40, step=3,
+          nb_predictions=100, mapping='m2m', sentence_length=40, step=3,
           mode='train'):
     """
     Trains the network and outputs the generated new sequence.
@@ -567,6 +568,16 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
     val_sequence, input_len2 = get_sequence("./validation_data/*")
     input_len = max(input_len1, input_len2)
 
+    # data generator of X_train and y_train, with random offset
+    train_data = data_generator(train_sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length, step=step,
+                                random_offset=True, batch_size=batch_size)
+
+    # data generator of X_val and y _val, with random offset
+    val_data = data_generator(val_sequence, input_len, mapping=mapping,
+                              sentence_length=sentence_length, step=step,
+                              random_offset=True, batch_size=batch_size)
+
     # check model type: urnn or brnn
     if model == 'urnn':
         # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
@@ -595,17 +606,6 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
 
     # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
-        # data generator of X_train and y_train, with random offset
-        train_data = data_generator(train_sequence, input_len, mapping=mapping,
-                                    sentence_length=sentence_length, step=step,
-                                    offset=np.random.randint(0, step-1),
-                                    batch_size=batch_size)
-
-        # data generator of X_val and y _val, with random offset
-        val_data = data_generator(val_sequence, input_len, mapping=mapping,
-                                  sentence_length=sentence_length, step=step,
-                                  offset=np.random.randint(0, step-1),
-                                  batch_size=batch_size)
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
