@@ -402,7 +402,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 
 def train(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=1,
-          validation_split=0.05, show_accuracy=True, nb_iterations=300,
+          validation_split=0.05, show_accuracy=True, nb_iterations=100,
           nb_predictions=40, mapping='m2m', sentence_length=40, step=40,
           mode='train'):
     """
