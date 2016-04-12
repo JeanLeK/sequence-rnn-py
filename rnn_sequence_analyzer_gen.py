@@ -220,11 +220,13 @@ def get_sequence(filepath):
     """
     # read file and convert ids of each line into array of numbers
     seqfiles = glob.glob(filepath)
+    sequence = []
 
     for seqfile in seqfiles:
         print "        " + seqfile
         with open(seqfile, 'r') as f:
-            sequence = [int(id_) for id_ in f]
+            one_sequence = [int(id_) for id_ in f]
+            sequence.extend(one_sequence)
 
     # add two extra positions for 'unknown-log' and 'no-log'
     vocab_size = max(sequence) + 2
@@ -402,7 +404,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 
 def train(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=1,
-          validation_split=0.05, show_accuracy=True, nb_iterations=100,
+          validation_split=0.05, show_accuracy=True, nb_iterations=200,
           nb_predictions=40, mapping='m2m', sentence_length=40, step=40,
           mode='train'):
     """
@@ -434,6 +436,10 @@ def train(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=1,
     val_sequence, input_len2 = get_sequence("./validation_data/*")
     input_len = max(input_len1, input_len2)
 
+    print "Training sequence length: %d" %len(train_sequence)
+    print "Validation sequence length: %d" %len(val_sequence)
+    print "#classes: %d\n" %input_len
+
     # data generator of X_train and y_train, with random offset
     train_data = data_generator(train_sequence, input_len, mapping=mapping,
                                 sentence_length=sentence_length, step=step,
@@ -454,7 +460,7 @@ def train(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=1,
     # rnn.plot_model()
 
     # load the previous model weights
-    # rnn.load_model("weights4.hdf5")
+    # rnn.load_model("weights.hdf5")
 
     if mode == 'predict':
         predict(val_sequence, input_len, rnn, nb_predictions=nb_predictions,
