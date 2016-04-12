@@ -223,9 +223,10 @@ def get_sequence(filepath):
     sequence = []
 
     for seqfile in seqfiles:
-        print "        " + seqfile
         with open(seqfile, 'r') as f:
             one_sequence = [int(id_) for id_ in f]
+            print "        %s, sequence length: %d" %(seqfile,
+                                                      len(one_sequence))
             sequence.extend(one_sequence)
 
     # add two extra positions for 'unknown-log' and 'no-log'
@@ -260,8 +261,8 @@ def data_generator(sequence, vocab_size, mapping='m2m', sentence_length=40,
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
-    X_train = np.zeros((batch_size, sentence_length, vocab_size),
-                       dtype=np.bool)
+    X_train = np.zeros((batch_size, sentence_length, vocab_size), dtype=np.bool)
+
     # expected outputs for each sentence
     if mapping == 'o2o':
         # if mapping is one-to-one
@@ -277,6 +278,8 @@ def data_generator(sequence, vocab_size, mapping='m2m', sentence_length=40,
         for i in range(offset, len(sequence) - offset - sentence_length, step):
             # index of a this sample in this batch
             batch_index = sample_count % batch_size
+            # print sample_count
+            # print batch_index
 
             # re-initialzing the batch
             if batch_index == 0:
