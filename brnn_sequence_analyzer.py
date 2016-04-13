@@ -250,11 +250,14 @@ def get_sequence(filepath):
     """
     # read file and convert ids of each line into array of numbers
     seqfiles = glob.glob(filepath)
+    sequence = []
 
     for seqfile in seqfiles:
-        print "        " + seqfile
         with open(seqfile, 'r') as f:
-            sequence = [int(id_) for id_ in f]
+            one_sequence = [int(id_) for id_ in f]
+            print "        %s, sequence length: %d" %(seqfile,
+                                                      len(one_sequence))
+            sequence.extend(one_sequence)
 
     # add two extra positions for 'unknown-log' and 'no-log'
     vocab_size = max(sequence) + 2
