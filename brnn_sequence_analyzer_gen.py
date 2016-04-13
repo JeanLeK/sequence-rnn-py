@@ -518,54 +518,8 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
                                  validation_data=val_data,
                                  nb_val_samples=nb_validation_samples)
 
-        # start index of the seed, random number in range
-        start_index = np.random.randint(0,
-                                        len(train_sequence)-sentence_length-1)
-
-        # the Temperature option list
-        t_list = [0.2]
-
-        # predict
-        for T in t_list:
-            print "------------Temperature: %.2f" %T
-            sentence = train_sequence[start_index:start_index + sentence_length]
-            # print sentence
-            generated = sentence
-            print "With seed: " + ' '.join(str(s) for s in sentence) + '\n'
-            sys.stdout.write("Generated: " + ' '.join(str(g)
-                                                      for g in generated))
-
-            # generate 100 elements
-            for _ in range(nb_predictions):
-                seed = np.zeros((1, sentence_length, input_len))
-                # format input
-                for t in range(0, sentence_length):
-                    seed[0, t, sentence[t]] = 1
-
-                # get predictions
-                # verbose = 0, no logging
-                if mapping == 'o2o':
-                    predictions = brnn.model.predict(seed, verbose=0)[0]
-                elif mapping == 'm2m':
-                    predictions = brnn.model.predict(seed,
-                                                     verbose=0)[0][
-                                                         sentence_length-1]
-                # print "predictions length: %d" %len(predictions)
-                next_id = sample(predictions, T)
-                # print predictions[next_id]
-                # print next id
-                sys.stdout.write(' ' + str(next_id))
-                sys.stdout.flush()
-
-                # use current output as input to predict the
-                # next id in the sequence
-                generated.append(next_id)
-                sentence.pop(0)
-                sentence.append(next_id)
-            print "\n"
-
         # print the losses and accuracy
-        print_save_losses(history)
+        # print_save_losses(history)
 
     return mode
 
