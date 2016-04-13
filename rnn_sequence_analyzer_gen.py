@@ -26,7 +26,7 @@ from keras.callbacks import Callback, ModelCheckpoint
 from keras.layers.core import Activation, Dense, TimeDistributedDense, Dropout
 from keras.layers.recurrent import LSTM, GRU
 from keras.models import Sequential
-# from keras.optimizers import RMSprop
+from keras.optimizers import RMSprop # pylint: disable=W0611
 from keras.utils.visualize_util import plot
 
 
