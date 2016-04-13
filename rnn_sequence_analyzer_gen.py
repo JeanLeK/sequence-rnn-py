@@ -362,19 +362,17 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
             'm2m': many-to-many
         sentence_length: {integer}, the length of each sentence.
     """
-    # start index of the seed, random number in range
-    start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
-
-
-    sentence = sequence[start_index:start_index + sentence_length]
-    # print sentence
-    generated = sentence
-    print "With seed: " + ' '.join(str(s) for s in sentence) + '\n'
-    sys.stdout.write("Generated: " + ' '.join(str(g)
-                                              for g in generated) + '\n')
-
     # generate elements
     for _ in range(nb_predictions):
+        # start index of the seed, random number in range
+        start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
+        # seed sentence
+        sentence = sequence[start_index:start_index + sentence_length]
+
+        # Y_true
+        y_true = sequence[start_index+1:start_index + sentence_length+1]
+        print "X:      " + ' '.join(str(s).ljust(4) for s in sentence)
+
         seed = np.zeros((1, sentence_length, input_len))
         # format input
         for t in range(0, sentence_length):
@@ -384,8 +382,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         # verbose = 0, no logging
         predictions = analyzer.model.predict(seed, verbose=0)[0]
 
-        # print "predictions length: %d" %len(predictions)
-        # print predictions.shape
+        # y_predicted
         if mapping == 'o2o':
             next_id = np.argmax(predictions)
             sys.stdout.write(' ' + str(next_id))
@@ -394,22 +391,20 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
             next_sentence = []
             for pred in predictions:
                 next_sentence.append(np.argmax(pred))
-            print ' '.join(str(id_) for id_ in next_sentence)
-            next_id = np.argmax(predictions[-1])
+            print "y_pred: " + ' '.join(str(id_).ljust(4)
+                                        for id_ in next_sentence)
+            # next_id = np.argmax(predictions[-1])
 
-        # use current output as input to predict the
-        # next id in the sequence
-        generated.append(next_id)
-        sentence.pop(0)
-        sentence.append(next_id)
+        # y_true
+        print "y_true: " + ' '.join(str(s).ljust(4) for s in y_true)
 
-    print "\n"
+        print "\n"
 
 
 def train(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=1,
           validation_split=0.05, show_accuracy=True, nb_iterations=200,
           nb_predictions=40, mapping='m2m', sentence_length=40, step=40,
-          mode='train'):
+          mode='predict'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -457,16 +452,17 @@ def train(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=1,
     rnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    rnn.build(layer='LSTM', mapping=mapping, nb_layers=1, dropout=0.2)
+    rnn.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)
 
     # plot model
     # rnn.plot_model()
 
     # load the previous model weights
-    # rnn.load_model("weights.hdf5")
+    rnn.load_model("weightsa2.hdf5")
+    # rnn.model.optimizer.lr.set_value(0.0001)
 
     if mode == 'predict':
-        predict(val_sequence, input_len, rnn, nb_predictions=nb_predictions,
+        predict(train_sequence, input_len, rnn, nb_predictions=nb_predictions,
                 mapping=mapping, sentence_length=sentence_length)
         return mode
 
