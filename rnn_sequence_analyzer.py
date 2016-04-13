@@ -453,6 +453,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=200, validation_split=0.05,
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
+        print "Number of epoch per iteration: ", nb_epoch
 
         # history of losses and accuracy
         history = History()

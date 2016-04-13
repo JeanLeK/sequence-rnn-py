@@ -224,6 +224,13 @@ class History(Callback):
         self.val_losses.append(logs.get('val_loss'))
         self.val_acc.append(logs.get('val_acc'))
 
+        # continutously save the train_loss, train_acc, val_loss, val_acc
+        # into a csv file with 4 columns respeactively
+        with open('history.csv', 'a') as csvfile:
+            his_writer = csv.writer(csvfile)
+            his_writer.writerow((logs.get('loss'), logs.get('acc'),
+                                 logs.get('val_loss'), logs.get('val_acc')))
+
 
 def sample(prob, temperature=0.2):
     """
