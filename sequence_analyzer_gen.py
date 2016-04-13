@@ -405,8 +405,8 @@ def data_generator(sequence, vocab_size, mapping='m2m', sentence_length=40,
 
     # continuousy creat batch data and next sentences
     while True:
-        offset = np.random.randint(0, step-1) if random_offset else 0
-        for i in range(offset, len(sequence) - offset - sentence_length, step):
+        offset = np.random.randint(0, step) if random_offset else 0
+        for i in range(offset, len(sequence) - sentence_length, step):
             # index of a this sample in this batch
             batch_index = sample_count % batch_size
 

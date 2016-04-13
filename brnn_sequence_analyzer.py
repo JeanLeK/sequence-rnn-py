@@ -284,10 +284,10 @@ def get_data(sequence, vocab_size, mapping='m2m', sentence_length=40, step=3,
     y_sentences = []
     next_ids = []
 
-    offset = np.random.randint(0, step-1) if random_offset else 0
+    offset = np.random.randint(0, step) if random_offset else 0
 
     # creat batch data and next sentences
-    for i in range(offset, len(sequence) - offset - sentence_length, step):
+    for i in range(offset, len(sequence) - sentence_length, step):
         X_sentences.append(sequence[i : i + sentence_length])
         if mapping == 'o2o':
             # if mapping is one-to-one
