@@ -309,36 +309,6 @@ def get_data(sequence, vocab_size, mapping='m2m', sentence_length=40, step=3,
     return X_train, y_train
 
 
-def print_save_losses(history):
-    """
-    Print the loss and accuracy, and continuously save them into a csv file.
-
-    Arguments:
-        history: {History}, the callbacks recording losses and accuracy.
-    """
-    # print the losses and accuracy of training
-    print "Training: "
-    train_losses = history.train_losses
-    train_acc = history.train_acc
-    for l, a in zip(train_losses, train_acc):
-        print "     Loss: %.4f , Accuracy: %.4f" %(l, a)
-
-    # print the losses and accuracy of validation
-    print "Validation: "
-    val_losses = history.val_losses
-    val_acc = history.val_acc
-    for l, a in zip(val_losses, val_acc):
-        print "     Loss: %.4f , Accuracy: %.4f" %(l, a)
-
-    # continutously save the train_losses, train_acc, val_losses, val_acc
-    # into a csv file with 4 columns respeactively
-    rows = zip(train_losses, train_acc, val_losses, val_acc)
-    with open('history.csv', 'a') as csvfile:
-        his_writer = csv.writer(csvfile)
-        for row in rows:
-            his_writer.writerow(row)
-
-
 def predict(sequence, input_len, analyzer, nb_predictions=80,
             mapping='m2m', sentence_length=40):
     """
@@ -395,7 +365,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # pylint: disable=W0613
           nb_iterations=4, nb_predictions=20, mapping='m2m',
-          sentence_length=40, step=40, mode='train'):
+          sentence_length=40, step=40, mode='predict'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -438,7 +408,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
     # rnn.plot_model()
 
     # load the previous model weights
-    rnn.load_model("weightsf2.hdf5")
+    rnn.load_model("weightsf3-45.hdf5")
     # rnn.model.optimizer.lr.set_value(0.0001)
 
     if mode == 'predict':
@@ -475,9 +445,6 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
                       validation_data=(X_val, y_val))
 
         rnn.save_model("weights-after-iteration.hdf5")
-
-        # print the losses and accuracy
-        # print_save_losses(history)
 
     return mode
 
