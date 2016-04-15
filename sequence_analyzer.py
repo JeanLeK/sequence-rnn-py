@@ -24,8 +24,9 @@ import csv
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers.core import Activation, Dense, TimeDistributedDense, Dropout
+from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
+from keras.layers.wrappers import TimeDistributed
 from keras.models import Sequential, Graph
 from keras.optimizers import RMSprop # pylint: disable=W0611
 from keras.utils.visualize_util import plot
@@ -168,11 +169,13 @@ class URNN(SequenceAnalyzer):
             self.model.add(Dense(self.output_len))
         elif mapping == 'm2m':
             # if mapping is many-to-many
-            self.model.add(TimeDistributedDense(self.output_len))
+            self.model.add(TimeDistributed(Dense(self.output_len)))
 
         self.model.add(Activation('softmax'))
 
-        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer='rmsprop',
+                           metrics=['accuracy'])
 
 
 class BRNN(SequenceAnalyzer):
@@ -273,8 +276,8 @@ class BRNN(SequenceAnalyzer):
                                 inputs=['forward_dropout' + str(nb_layers),
                                         'backward_dropout' + str(nb_layers)])
         elif mapping == 'm2m':
-            self.model.add_node(TimeDistributedDense(self.output_len,
-                                                     activation='softmax'),
+            self.model.add_node(TimeDistributed(Dense(self.output_len,
+                                                      activation='softmax')),
                                 name='softmax',
                                 inputs=['forward_dropout' + str(nb_layers),
                                         'backward_dropout' + str(nb_layers)])
@@ -525,9 +528,8 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 
 def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
-          validation_split=0.05, show_accuracy=True, nb_iterations=40, # pylint: disable=W0613
-          nb_predictions=100, mapping='m2m', sentence_length=40, step=3,
-          mode='train'):
+          validation_split=0.05, nb_iterations=40, nb_predictions=100, # pylint: disable=W0613
+          mapping='m2m', sentence_length=40, step=3, mode='train'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -537,7 +539,6 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
         nb_epoch: {interger}, number of epoches per iteration.
         validation_split: {float} (0 ~ 1), percentage of validation data
             among training data.
-        show_accuracy: {boolean}, show accuracy during training.
         nb_iterations: {integer}, number of iterations.
         nb_predictions: {integer}, number of the ids predicted.
         mapping: {string}, input to output mapping.
@@ -604,8 +605,7 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_epoch=1,
         analyzer.model.fit(X_train, y_train,
                            batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
                            callbacks=[history, checkpointer],
-                           validation_data=(X_val, y_val),
-                           show_accuracy=show_accuracy)
+                           validation_data=(X_val, y_val))
 
         # print the losses and accuracy
         # print_save_losses(history)

@@ -23,8 +23,9 @@ import csv
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers.core import Activation, Dense, TimeDistributedDense, Dropout
+from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
+from keras.layers.wrappers import TimeDistributed
 from keras.models import Sequential
 from keras.optimizers import RMSprop # pylint: disable=W0611
 from keras.utils.visualize_util import plot
@@ -115,7 +116,7 @@ class SequenceAnalyzer(object):
             self.model.add(Dense(self.output_len))
         elif mapping == 'm2m':
             # if mapping is many-to-many
-            self.model.add(TimeDistributedDense(self.output_len))
+            self.model.add(TimeDistributed(Dense(self.output_len)))
 
         self.model.add(Activation('softmax'))
 
@@ -410,9 +411,8 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 
 def train(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=40,
-          validation_split=0.05, show_accuracy=True, nb_iterations=5,
-          nb_predictions=40, mapping='m2m', sentence_length=40, step=40,
-          mode='predict'):
+          validation_split=0.05, nb_iterations=5, nb_predictions=40,
+          mapping='m2m', sentence_length=40, step=40, mode='predict'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -496,7 +496,6 @@ def train(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=40,
         rnn.model.fit_generator(train_data,
                                 samples_per_epoch=nb_training_samples,
                                 nb_epoch=nb_epoch, verbose=1,
-                                show_accuracy=show_accuracy,
                                 callbacks=[history, checkpointer],
                                 validation_data=val_data,
                                 nb_val_samples=nb_validation_samples)

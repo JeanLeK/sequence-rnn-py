@@ -21,8 +21,9 @@ import csv
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers.core import Activation, Dense, TimeDistributedDense, Dropout
+from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM, GRU
+from keras.layers.wrappers import TimeDistributed
 from keras.models import Sequential
 from keras.optimizers import RMSprop # pylint: disable=W0611
 from keras.utils.visualize_util import plot
@@ -113,11 +114,13 @@ class SequenceAnalyzer(object):
             self.model.add(Dense(self.output_len))
         elif mapping == 'm2m':
             # if mapping is many-to-many
-            self.model.add(TimeDistributedDense(self.output_len))
+            self.model.add(TimeDistributed(Dense(self.output_len)))
 
         self.model.add(Activation('softmax'))
 
-        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer='rmsprop',
+                           metrics=['accuracy'])
 
     def save_model(self, filename):
         """
@@ -391,8 +394,8 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 
 def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # pylint: disable=W0613
-          show_accuracy=True, nb_iterations=4, nb_predictions=20,
-          mapping='m2m', sentence_length=40, step=40, mode='predict'):
+          nb_iterations=4, nb_predictions=20, mapping='m2m',
+          sentence_length=40, step=40, mode='train'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -435,7 +438,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
     # rnn.plot_model()
 
     # load the previous model weights
-    rnn.load_model("weightsf1.hdf5")
+    rnn.load_model("weightsf2.hdf5")
     # rnn.model.optimizer.lr.set_value(0.0001)
 
     if mode == 'predict':
@@ -469,8 +472,9 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
         rnn.model.fit(X_train, y_train,
                       batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
                       callbacks=[history, checkpointer],
-                      validation_data=(X_val, y_val),
-                      show_accuracy=show_accuracy)
+                      validation_data=(X_val, y_val))
+
+        rnn.save_model("weights-after-iteration.hdf5")
 
         # print the losses and accuracy
         # print_save_losses(history)
