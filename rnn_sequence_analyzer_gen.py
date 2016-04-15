@@ -196,6 +196,7 @@ class History(Callback):
         # into a csv file with 4 columns respeactively
         with open('history.csv', 'a') as csvfile:
             his_writer = csv.writer(csvfile)
+            print "    Save loss and accuracy into csv file."
             his_writer.writerow((logs.get('loss'), logs.get('acc'),
                                  logs.get('val_loss'), logs.get('val_acc')))
 
@@ -374,10 +375,10 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         # start index of the seed, random number in range
         start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
         # seed sentence
-        sentence = sequence[start_index:start_index + sentence_length]
+        sentence = sequence[start_index : start_index + sentence_length]
 
         # Y_true
-        y_true = sequence[start_index+1:start_index + sentence_length+1]
+        y_true = sequence[start_index + 1 : start_index + sentence_length + 1]
         print "X:      " + ' '.join(str(s).ljust(4) for s in sentence)
 
         seed = np.zeros((1, sentence_length, input_len))

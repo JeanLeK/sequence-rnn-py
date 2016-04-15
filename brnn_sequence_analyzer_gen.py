@@ -228,6 +228,7 @@ class History(Callback):
         # into a csv file with 4 columns respeactively
         with open('history.csv', 'a') as csvfile:
             his_writer = csv.writer(csvfile)
+            print "    Save loss and accuracy into csv file."
             his_writer.writerow((logs.get('loss'), logs.get('acc'),
                                  logs.get('val_loss'), logs.get('val_acc')))
 
@@ -404,10 +405,10 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         # start index of the seed, random number in range
         start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
         # seed sentence
-        sentence = sequence[start_index:start_index + sentence_length]
+        sentence = sequence[start_index : start_index + sentence_length]
 
         # Y_true
-        y_true = sequence[start_index+1:start_index + sentence_length+1]
+        y_true = sequence[start_index + 1 : start_index + sentence_length + 1]
         print "X:      " + ' '.join(str(s).ljust(4) for s in sentence)
 
         seed = np.zeros((1, sentence_length, input_len))
@@ -485,13 +486,14 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
     brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    brnn.build(layer='LSTM', mapping=mapping)
+    brnn.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)
 
     # plot model
     brnn.plot_model()
 
     # load the previous model weights
     # brnn.load_model("weights.hdf5")
+    # rnn.model.optimizer.lr.set_value(0.0001)
 
     if mode == 'predict':
         predict(val_sequence, input_len, brnn, nb_predictions=nb_predictions,

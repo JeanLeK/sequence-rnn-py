@@ -194,6 +194,7 @@ class History(Callback):
         # into a csv file with 4 columns respeactively
         with open('history.csv', 'a') as csvfile:
             his_writer = csv.writer(csvfile)
+            print "    Save loss and accuracy into csv file."
             his_writer.writerow((logs.get('loss'), logs.get('acc'),
                                  logs.get('val_loss'), logs.get('val_acc')))
 
@@ -276,7 +277,7 @@ def get_data(sequence, vocab_size, mapping='m2m', sentence_length=40, step=3,
 
     # number of sampes
     nb_samples = len(X_sentences)
-    print "total # of sentences: %d" %nb_samples
+    # print "total # of sentences: %d" %nb_samples
 
     # one-hot vector (all zeros except for a single one at
     # the exact postion of this id number)
@@ -355,10 +356,10 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         # start index of the seed, random number in range
         start_index = np.random.randint(0, len(sequence) - sentence_length - 1)
         # seed sentence
-        sentence = sequence[start_index:start_index + sentence_length]
+        sentence = sequence[start_index : start_index + sentence_length]
 
         # Y_true
-        y_true = sequence[start_index+1:start_index + sentence_length+1]
+        y_true = sequence[start_index + 1 : start_index + sentence_length + 1]
         print "X:      " + ' '.join(str(s).ljust(4) for s in sentence)
 
         seed = np.zeros((1, sentence_length, input_len))
@@ -389,9 +390,9 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         print "\n"
 
 
-def train(hidden_len=512, batch_size=128, nb_epoch=200, validation_split=0.05,
-          show_accuracy=True, nb_iterations=200, nb_predictions=20,
-          mapping='m2m', sentence_length=40, step=40, mode='train'):
+def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # pylint: disable=W0613
+          show_accuracy=True, nb_iterations=4, nb_predictions=20,
+          mapping='m2m', sentence_length=40, step=40, mode='predict'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -434,7 +435,8 @@ def train(hidden_len=512, batch_size=128, nb_epoch=200, validation_split=0.05,
     # rnn.plot_model()
 
     # load the previous model weights
-    # rnn.load_model("weightsd2.hdf5")
+    rnn.load_model("weightsf1.hdf5")
+    # rnn.model.optimizer.lr.set_value(0.0001)
 
     if mode == 'predict':
         predict(val_sequence, input_len, rnn, nb_predictions=nb_predictions,
