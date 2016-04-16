@@ -434,6 +434,7 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
         mode: {string}, th running mode of this programm
             'train': train and predict
             'predict': only predict by loading existing model weights
+            'evaluate': evaluate the model in evaluation data set
     """
     print "Loading training data..."
     train_sequence, input_len1 = get_sequence("./train_data/*")
@@ -468,6 +469,17 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
     if mode == 'predict':
         predict(val_sequence, input_len, brnn, nb_predictions=nb_predictions,
                 mapping=mapping, sentence_length=sentence_length)
+        return mode
+    elif mode == 'evaluate':
+        print "Metrics: " + ', '.join(rnn.model.metrics_names)
+        X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length, step=step,
+                                random_offset=False)
+        results = rnn.model.evaluate(X_val, y_val, #pylint: disable=W0612
+                                     batch_size=batch_size,
+                                     verbose=1)
+        print "Loss: ", results[0]
+        print "Accuracy: ", results[1]
         return mode
 
     # number of training sampes and validation samples

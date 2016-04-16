@@ -365,7 +365,7 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
 
 def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # pylint: disable=W0613
           nb_iterations=4, nb_predictions=20, mapping='m2m',
-          sentence_length=40, step=40, mode='predict'):
+          sentence_length=40, step=40, mode='evaluate'):
     """
     Trains the network and outputs the generated new sequence.
 
@@ -386,6 +386,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
         mode: {string}, th running mode of this programm
             'train': train and predict
             'predict': only predict by loading existing model weights
+            'evaluate': evaluate the model in evaluation data set
     """
     # get parameters and dimensions of the model
     print "Loading training data..."
@@ -414,6 +415,17 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
     if mode == 'predict':
         predict(val_sequence, input_len, rnn, nb_predictions=nb_predictions,
                 mapping=mapping, sentence_length=sentence_length)
+        return mode
+    elif mode == 'evaluate':
+        print "Metrics: " + ', '.join(rnn.model.metrics_names)
+        X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length, step=step,
+                                random_offset=False)
+        results = rnn.model.evaluate(X_val, y_val, #pylint: disable=W0612
+                                     batch_size=batch_size,
+                                     verbose=1)
+        print "Loss: ", results[0]
+        print "Accuracy: ", results[1]
         return mode
 
     # train model and output generated sequence
