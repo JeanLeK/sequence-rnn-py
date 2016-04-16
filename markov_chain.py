@@ -48,7 +48,8 @@ class LabeledMarkovPredictor(object):
         # Give the class count two dimensions, but put the second to 1, so it's
         # broadcastable over W when we wish to divide. Set to to the number of
         # classes, so that it will give us the uniform distribution as a prior
-        self.class_counts = np.full(self.num_classes, self.num_classes,
+        self.class_counts = np.full(self.num_classes,
+                                    self.num_classes,
                                     dtype=np.uint64)
 
         self.log_class_counts = np.log(np.full(self.num_classes,
@@ -245,9 +246,11 @@ def train(sentence_length=40):
     print "Validation sequence length: %d" %len(val_sequence)
     print "#classes: %d\n" %nb_classes
 
-    X_train, y_train = get_data(train_sequence, sentence_length=sentence_length,
+    X_train, y_train = get_data(train_sequence,
+                                sentence_length=sentence_length,
                                 random_offset=False)
-    X_val, y_val = get_data(val_sequence, sentence_length=sentence_length,
+    X_val, y_val = get_data(val_sequence,
+                            sentence_length=sentence_length,
                             random_offset=False)
 
     print "Build Markov Chain..."
@@ -256,9 +259,8 @@ def train(sentence_length=40):
     print "Train the model..."
     model.train((transpose(X_train), transpose(y_train)))
 
-    validation_loss = 0
-
     print "Validating..."
+    validation_loss = 0
     validation_loss = model.evaluate((transpose(X_val), transpose(y_val)))
 
     print "Validation loss: {}".format(validation_loss)
