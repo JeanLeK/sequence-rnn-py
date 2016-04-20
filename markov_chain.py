@@ -273,7 +273,7 @@ def train_hmm():
     HMM for sequence learning.
     """
     print "Loading training data..."
-    train_sequence, input_len1 = get_sequence("./train_data/*")
+    train_sequence, num_classes = get_sequence("./train_data/*")
 
     print "Build HMM..."
     model = MultinomialHMM(n_components=2)
