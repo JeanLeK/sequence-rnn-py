@@ -197,9 +197,10 @@ class History(Callback):
 
         # continutously save the train_loss, train_acc, val_loss, val_acc
         # into a csv file with 4 columns respeactively
-        with open('history.csv', 'a') as csvfile:
+        csv_name = 'history.csv'
+        with open(csv_name, 'a') as csvfile:
             his_writer = csv.writer(csvfile)
-            print "    Save loss and accuracy into csv file."
+            print "\n    Save loss and accuracy into %s" %csv_name
             his_writer.writerow((logs.get('loss'), logs.get('acc'),
                                  logs.get('val_loss'), logs.get('val_acc')))
 
