@@ -12,6 +12,7 @@ Data: 2016-04-15
 
 import glob
 import numpy as np
+from hmmlearn.hmm import MultinomialHMM
 
 
 class LabeledMarkovPredictor(object):
@@ -266,6 +267,22 @@ def train(sentence_length=40):
     print "Validation loss: {}".format(validation_loss)
 
 
+# TODO: not working yet
+def train_hmm():
+    """
+    HMM for sequence learning.
+    """
+    print "Loading training data..."
+    train_sequence, input_len1 = get_sequence("./train_data/*")
+
+    print "Build HMM..."
+    model = MultinomialHMM(n_components=2)
+
+    print "Train HMM..."
+    model.fit([train_sequence])
+
+
 
 if __name__ == '__main__':
     train()
+    # train_hmm()
