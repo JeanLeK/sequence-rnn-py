@@ -1,4 +1,4 @@
-# sequence-rnn-py (thesis project)
+# sequence-rnn-py
 
 [![Build Status](https://travis-ci.org/fluency03/sequence-rnn-py.svg?branch=master)](https://travis-ci.org/fluency03/sequence-rnn-py)
 
@@ -6,6 +6,7 @@ This program analyze the sequence using (Uni-directional and Bi-directional) Rec
 It is based on this [lstm_text_generation.py](https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py) and this [imdb_bidirectional_lstm.py]( https://github.com/fchollet/keras/blob/master/examples/imdb_bidirectional_lstm.py) examples of Keras.
 
 
+*This is part of my master thesis project and still in development.*
 
 ## Requirements
 
