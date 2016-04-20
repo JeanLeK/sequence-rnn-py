@@ -71,7 +71,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the weights are going to be saved.
         """
-        print "Save Weights..."
+        print "Save Weights %s ..." %filename
         self.model.save_weights(filename)
 
     def load_model(self, filename):
@@ -82,7 +82,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the weights are going to be loaded.
         """
-        print "Load Weights..."
+        print "Load Weights %s ..." %filename
         self.model.load_weights(filename)
 
     def plot_model(self, filename):
@@ -93,7 +93,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the model graphic is plotted.
         """
-        print "Plot Model..."
+        print "Plot Model %s ..." %filename
         plot(self.model, to_file=filename)
 
 
@@ -124,6 +124,8 @@ class URNN(SequenceAnalyzer):
             dropout: {float}, dropout value.
         """
         print "Building Model..."
+        print ("    layer = %s , mapping = %s , nb_layers = %d , dropout = %.2f"
+               %(layer, mapping, nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
@@ -206,6 +208,8 @@ class BRNN(SequenceAnalyzer):
             dropout: {float}, dropout value.
         """
         print "Building Model..."
+        print ("    layer = %s , mapping = %s , nb_layers = %d , dropout = %.2f"
+               %(layer, mapping, nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
@@ -579,13 +583,14 @@ def train(model='urnn', hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
                 mapping=mapping, sentence_length=sentence_length)
         return mode
     elif mode == 'evaluate':
-        print "Metrics: " + ', '.join(rnn.model.metrics_names)
-        X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
-                                sentence_length=sentence_length, step=step,
-                                random_offset=False)
-        results = rnn.model.evaluate(X_val, y_val, #pylint: disable=W0612
-                                     batch_size=batch_size,
-                                     verbose=1)
+        print "Metrics: " + ', '.join(analyzer.model.metrics_names)
+        X_val, y_val = data_generator(val_sequence, input_len, mapping=mapping,
+                                      sentence_length=sentence_length,
+                                      step=step, random_offset=False,
+                                      batch_size=batch_size)
+        results = analyzer.model.evaluate(X_val, y_val, #pylint: disable=W0612
+                                          batch_size=batch_size,
+                                          verbose=1)
         print "Loss: ", results[0]
         print "Accuracy: ", results[1]
         return mode

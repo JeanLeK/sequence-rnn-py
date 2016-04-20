@@ -67,6 +67,8 @@ class SequenceAnalyzer(object):
             dropout: {float}, dropout value.
         """
         print "Building Model..."
+        print ("    layer = %s , mapping = %s , nb_layers = %d , dropout = %.2f"
+               %(layer, mapping, nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
@@ -161,7 +163,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the weights are going to be saved.
         """
-        print "Save Weights..."
+        print "Save Weights %s ..." %filename
         self.model.save_weights(filename)
 
     def load_model(self, filename):
@@ -172,7 +174,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the weights are going to be loaded.
         """
-        print "Load Weights..."
+        print "Load Weights %s ..." %filename
         self.model.load_weights(filename)
 
     def plot_model(self, filename='brnn_model.png'):
@@ -183,7 +185,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the weights are going to be plotted.
         """
-        print "Plot Model..."
+        print "Plot Model %s ..." %filename
         plot(self.model, to_file=filename)
 
 
@@ -443,13 +445,13 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.05, # p
                 mapping=mapping, sentence_length=sentence_length)
         return mode
     elif mode == 'evaluate':
-        print "Metrics: " + ', '.join(rnn.model.metrics_names)
+        print "Metrics: " + ', '.join(brnn.model.metrics_names)
         X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
                                 sentence_length=sentence_length, step=step,
                                 random_offset=False)
-        results = rnn.model.evaluate(X_val, y_val, #pylint: disable=W0612
-                                     batch_size=batch_size,
-                                     verbose=1)
+        results = brnn.model.evaluate(X_val, y_val, #pylint: disable=W0612
+                                      batch_size=batch_size,
+                                      verbose=1)
         print "Loss: ", results[0]
         print "Accuracy: ", results[1]
         return mode

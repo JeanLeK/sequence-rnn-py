@@ -67,6 +67,8 @@ class SequenceAnalyzer(object):
             dropout: {float}, dropout value.
         """
         print "Building Model..."
+        print ("    layer = %s , mapping = %s , nb_layers = %d , dropout = %.2f"
+               %(layer, mapping, nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
@@ -130,7 +132,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the weights are going to be saved.
         """
-        print "Save Weights..."
+        print "Save Weights %s ..." %filename
         self.model.save_weights(filename)
 
     def load_model(self, filename):
@@ -141,7 +143,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the weights are going to be loaded.
         """
-        print "Load Weights..."
+        print "Load Weights %s ..." %filename
         self.model.load_weights(filename)
 
     def plot_model(self, filename='rnn_model.png'):
@@ -152,7 +154,7 @@ class SequenceAnalyzer(object):
             filename: {string}, the name/path to the file
                 to which the weights are going to be plotted.
         """
-        print "Plot Model..."
+        print "Plot Model %s ..." %filename
         plot(self.model, to_file=filename)
 
 
@@ -409,7 +411,7 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
     # rnn.plot_model()
 
     # load the previous model weights
-    rnn.load_model("weightsf3-45.hdf5")
+    rnn.load_model("weightsf4-61.hdf5")
     # rnn.model.optimizer.lr.set_value(0.0001)
 
     if mode == 'predict':
