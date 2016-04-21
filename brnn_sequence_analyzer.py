@@ -67,8 +67,9 @@ class SequenceAnalyzer(object):
             dropout: {float}, dropout value.
         """
         print "Building Model..."
-        print ("    layer = %s , mapping = %s , nb_layers = %d , dropout = %.2f"
-               %(layer, mapping, nb_layers, dropout))
+        print ("    layer = %d-%s , mapping = %s , "
+               "nb_layers = %d , dropout = %.2f"
+               %(self.hidden_len, layer, mapping, nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
