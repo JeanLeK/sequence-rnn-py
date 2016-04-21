@@ -398,78 +398,39 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         print "\n"
 
 
-def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.05, # pylint: disable=W0613
-          nb_iterations=40, nb_predictions=100, mapping='m2m',
-          sentence_length=40, step=3, mode='train'):
+def train(analyzer, train_sequence, val_sequence, input_len,
+          batch_size=128, nb_epoch=50, nb_iterations=4,
+          sentence_length=40, step=40, mapping='m2m'):
     """
-    Trains the network and outputs the generated new sequence.
+    Trains the network.
 
     Arguments:
-        hidden_len: {integer}, the size of a hidden layer.
+        analyzer: {SequenceAnalyzer}.
+        train_sequence: {list}, training sequence.
+        val_sequence: {list}, validation sequence.
+        input_len: {integer}, the number of classes, i.e., the input length of
+            neural network.
         batch_size: {interger}, the number of sentences per batch.
-        nb_epoch: {interger}, number of epoches per iteration.
-        validation_split: {float} (0 ~ 1), percentage of validation data
-            among training data.
+        nb_epoch: {integer}, number of epoches per iteration.
         nb_iterations: {integer}, number of iterations.
-        nb_predictions: {integer}, number of the ids predicted.
-        mapping: {string}, input to output mapping
-            'o2o': one-to-one
-            'm2m': many-to-many
         sentence_length: {integer}, the length of each training sentence.
         step: {integer}, the sample steps.
-        mode: {string}, th running mode of this programm
-            'train': train and predict
-            'predict': only predict by loading existing model weights
-            'evaluate': evaluate the model in evaluation data set
+        mapping: {string}, input to output mapping.
+            'o2o': one-to-one
+            'm2m': many-to-many
     """
-    print "Loading training data..."
-    train_sequence, input_len1 = get_sequence("./train_data/*")
-    print "Loading validation data..."
-    val_sequence, input_len2 = get_sequence("./validation_data/*")
-    input_len = max(input_len1, input_len2)
-
-    # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
-    # forward and backward
-    brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
-
-    # build model
-    brnn.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)
-
-    # plot model
-    brnn.plot_model()
-
-    # load the previous model weights
-    # brnn.load_model("weights.hdf5")
-    # rnn.model.optimizer.lr.set_value(0.0001)
-
-    if mode == 'predict':
-        predict(val_sequence, input_len, brnn, nb_predictions=nb_predictions,
-                mapping=mapping, sentence_length=sentence_length)
-        return mode
-    elif mode == 'evaluate':
-        print "Metrics: " + ', '.join(brnn.model.metrics_names)
-        X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
-                                sentence_length=sentence_length, step=step,
-                                random_offset=False)
-        results = brnn.model.evaluate(X_val, y_val, #pylint: disable=W0612
-                                      batch_size=batch_size,
-                                      verbose=1)
-        print "Loss: ", results[0]
-        print "Accuracy: ", results[1]
-        return mode
-
-    # train model and output generated sequence
     for iteration in range(1, nb_iterations+1):
         # create training data, randomize the offset between steps
         X_train, y_train = get_data(train_sequence, input_len, mapping=mapping,
                                     sentence_length=sentence_length, step=step,
-                                    random_offset=True)
+                                    random_offset=False)
         X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
                                 sentence_length=sentence_length, step=step,
-                                random_offset=True)
+                                random_offset=False)
         print ""
         print "------------------------ Start Training ------------------------"
         print "Iteration: ", iteration
+        print "Number of epoch per iteration: ", nb_epoch
 
         # history of losses and accuracy
         history = History()
@@ -480,16 +441,94 @@ def train(hidden_len=512, batch_size=128, nb_epoch=1, validation_split=0.05, # p
                                        verbose=1, save_best_only=True)
 
         # train the model
-        brnn.model.fit({'input': X_train, 'output': y_train},
-                       batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
-                       callbacks=[history, checkpointer],
-                       validation_data=(X_val, y_val))
+        analyzer.model.fit(X_train, y_train,
+                           batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
+                           callbacks=[history, checkpointer],
+                           validation_data=(X_val, y_val))
 
-        # print the losses and accuracy
-        # print_save_losses(history)
+        analyzer.save_model("weights-after-iteration.hdf5")
+
+
+def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4, lr=0.001,
+        validation_split=0.05, # pylint: disable=W0613
+        nb_predictions=20, mapping='m2m', sentence_length=80, step=80,
+        mode='train'):
+    """
+    Train, evaluate, or predict.
+
+    Arguments:
+        hidden_len: {integer}, the size of a hidden layer.
+        batch_size: {interger}, the number of sentences per batch.
+        nb_epoch: {interger}, number of epoches per iteration.
+        nb_iterations: {integer}, number of iterations.
+        lr: {float}, learning rate.
+        validation_split: {float} (0 ~ 1), percentage of validation data
+            among training data.
+        nb_predictions: {integer}, number of the ids predicted.
+        mapping: {string}, input to output mapping.
+            'o2o': one-to-one
+            'm2m': many-to-many
+        sentence_length: {integer}, the length of each training sentence.
+        step: {integer}, the sample steps.
+        mode: {string}, th running mode of this programm
+            'train': train and predict
+            'predict': only predict by loading existing model weights
+            'evaluate': evaluate the model in evaluation data set
+    """
+    # get parameters and dimensions of the model
+    print "Loading training data..."
+    train_sequence, input_len1 = get_sequence("./train_data/*")
+    print "Loading validation data..."
+    val_sequence, input_len2 = get_sequence("./validation_data/*")
+    input_len = max(input_len1, input_len2)
+
+    print "Training sequence length: %d" %len(train_sequence)
+    print "Validation sequence length: %d" %len(val_sequence)
+    print "#classes: %d\n" %input_len
+
+    # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
+    brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
+
+    # build model
+    brnn.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)
+
+    # plot model
+    # brnn.plot_model()
+
+    # load the previous model weights
+    # brnn.load_model("weightsf4-61.hdf5")
+
+    # reset the learning rate
+    if lr != 0.001:
+        brnn.model.optimizer.lr.set_value(lr)
+
+    if mode == 'predict':
+        predict(val_sequence, input_len, brnn, nb_predictions=nb_predictions,
+                mapping=mapping, sentence_length=sentence_length)
+    elif mode == 'evaluate':
+        print "Metrics: " + ', '.join(brnn.model.metrics_names)
+        X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length, step=step,
+                                random_offset=False)
+        results = brnn.model.evaluate(X_val, y_val, #pylint: disable=W0612
+                                      batch_size=batch_size,
+                                      verbose=1)
+        print "Loss: ", results[0]
+        print "Accuracy: ", results[1]
+    elif mode == 'train':
+        try:
+            train(brnn, train_sequence, val_sequence, input_len,
+                  batch_size=batch_size, nb_epoch=nb_epoch,
+                  nb_iterations=nb_iterations,
+                  sentence_length=sentence_length,
+                  step=step, mapping=mapping)
+        except KeyboardInterrupt:
+            brnn.save_model("weights-stop.hdf5")
+    else:
+        print "The mode = %s is not correct!!!" %mode
 
     return mode
 
 
 if __name__ == '__main__':
-    train()
+    run()
