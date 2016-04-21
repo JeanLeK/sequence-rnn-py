@@ -593,7 +593,8 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4, lr=0.001,
     print "#classes: %d\n" %input_len
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
-    analyzer = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
+    analyzer = SequenceAnalyzer(sentence_length,
+                                input_len, hidden_len, input_len)
 
     # build model
     analyzer.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)

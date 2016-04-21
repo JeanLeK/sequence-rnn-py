@@ -415,22 +415,63 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         print "\n"
 
 
-def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
-          validation_split=0.05, nb_iterations=40, nb_predictions=100,
-          mapping='m2m', sentence_length=40, step=3, mode='train'):
+def train(analyzer, train_data, nb_training_samples,
+          val_data, nb_validation_samples,
+          nb_epoch=50, nb_iterations=4):
     """
-    Trains the network and outputs the generated new sequence.
+    Trains the network.
+
+    Arguments:
+        analyzer: {SequenceAnalyzer}.
+        train_data: {tuple}, training data (X_train, y_train).
+        val_data: {tuple}, validation data (X_val, y_val).
+        nb_training_samples: {integer}, the number training samples.
+        nb_validation_samples: {integer}, the number validation samples.
+        nb_iterations: {integer}, number of iterations.
+        sentence_length: {integer}, the length of each training sentence.
+    """
+    for iteration in range(1, nb_iterations+1):
+        print ""
+        print "------------------------ Start Training ------------------------"
+        print "Iteration: ", iteration
+        print "Number of epoch per iteration: ", nb_epoch
+
+        # history of losses and accuracy
+        history = History()
+
+        # saves the model weights after each epoch
+        # if the validation loss decreased
+        checkpointer = ModelCheckpoint(filepath="weights.hdf5",
+                                       verbose=1, save_best_only=True)
+
+        # train the model with data generator
+        analyzer.model.fit_generator(train_data,
+                                     samples_per_epoch=nb_training_samples,
+                                     nb_epoch=nb_epoch, verbose=1,
+                                     callbacks=[history, checkpointer],
+                                     validation_data=val_data,
+                                     nb_val_samples=nb_validation_samples)
+
+        analyzer.save_model("weights-after-iteration.hdf5")
+
+
+def run(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=50,
+        nb_iterations=4, lr=0.001, validation_split=0.05, nb_predictions=20,
+        mapping='m2m', sentence_length=80, step=80, mode='train'):
+    """
+    Train, evaluate, or predict.
 
     Arguments:
         hidden_len: {integer}, the size of a hidden layer.
         batch_size: {interger}, the number of sentences per batch.
         nb_batch: {integer}, number of batches to be trained durign each epoch.
         nb_epoch: {interger}, number of epoches per iteration.
-        validation_split: {float} (0 ~ 1), the ratio in percentage of validation
-            data over training data.
         nb_iterations: {integer}, number of iterations.
+        lr: {float}, learning rate.
+        validation_split: {float} (0 ~ 1), percentage of validation data
+            among training data.
         nb_predictions: {integer}, number of the ids predicted.
-        mapping: {string}, input to output mapping
+        mapping: {string}, input to output mapping.
             'o2o': one-to-one
             'm2m': many-to-many
         sentence_length: {integer}, the length of each training sentence.
@@ -440,40 +481,46 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
             'predict': only predict by loading existing model weights
             'evaluate': evaluate the model in evaluation data set
     """
+    # get parameters and dimensions of the model
     print "Loading training data..."
     train_sequence, input_len1 = get_sequence("./train_data/*")
     print "Loading validation data..."
     val_sequence, input_len2 = get_sequence("./validation_data/*")
     input_len = max(input_len1, input_len2)
 
+    print "Training sequence length: %d" %len(train_sequence)
+    print "Validation sequence length: %d" %len(val_sequence)
+    print "#classes: %d\n" %input_len
+
     # data generator of X_train and y_train, with random offset
     train_data = data_generator(train_sequence, input_len, mapping=mapping,
                                 sentence_length=sentence_length, step=step,
                                 random_offset=True, batch_size=batch_size)
 
-    # data generator of X_val and y _val, with random offset
+    # data generator of X_val and y _val,  with random offset
     val_data = data_generator(val_sequence, input_len, mapping=mapping,
                               sentence_length=sentence_length, step=step,
                               random_offset=True, batch_size=batch_size)
 
     # two layered LSTM 512 hidden nodes and a dropout rate of 0.2
-    # forward and backward
     brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
     brnn.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)
 
     # plot model
-    brnn.plot_model()
+    # brnn.plot_model()
 
     # load the previous model weights
-    # brnn.load_model("weights.hdf5")
-    # rnn.model.optimizer.lr.set_value(0.0001)
+    # brnn.load_model("weightsf4-61.hdf5")
+
+    # reset the learning rate
+    if lr != 0.001:
+        brnn.model.optimizer.lr.set_value(lr)
 
     if mode == 'predict':
         predict(val_sequence, input_len, brnn, nb_predictions=nb_predictions,
                 mapping=mapping, sentence_length=sentence_length)
-        return mode
     elif mode == 'evaluate':
         print "Metrics: " + ', '.join(brnn.model.metrics_names)
         X_val, y_val = data_generator(val_sequence, input_len, mapping=mapping,
@@ -485,39 +532,22 @@ def train(hidden_len=512, batch_size=128, nb_batch=40, nb_epoch=1,
                                       verbose=1)
         print "Loss: ", results[0]
         print "Accuracy: ", results[1]
-        return mode
+    elif mode == 'train':
+        # number of training sampes and validation samples
+        nb_training_samples = batch_size * nb_batch
+        nb_validation_samples = int(nb_training_samples * validation_split)
 
-    # number of training sampes and validation samples
-    nb_training_samples = batch_size * nb_batch
-    nb_validation_samples = int(nb_training_samples * validation_split)
-
-    # train model and output generated sequence
-    for iteration in range(1, nb_iterations+1):
-        print ""
-        print "------------------------ Start Training ------------------------"
-        print "Iteration: ", iteration
-
-        # history of losses and accuracy
-        history = History()
-
-        # saves the model weights after each epoch
-        # if the validation loss decreased
-        checkpointer = ModelCheckpoint(filepath="weights.hdf5",
-                                       verbose=1, save_best_only=True)
-
-        # train the model with data generator
-        brnn.model.fit_generator(train_data,
-                                 samples_per_epoch=nb_validation_samples,
-                                 nb_epoch=nb_epoch, verbose=1,
-                                 callbacks=[history, checkpointer],
-                                 validation_data=val_data,
-                                 nb_val_samples=nb_validation_samples)
-
-        # print the losses and accuracy
-        # print_save_losses(history)
+        try:
+            train(brnn, train_data, nb_training_samples,
+                  val_data, nb_validation_samples,
+                  nb_epoch=nb_epoch, nb_iterations=nb_iterations)
+        except KeyboardInterrupt:
+            brnn.save_model("weights-stop.hdf5")
+    else:
+        print "The mode = %s is not correct!!!" %mode
 
     return mode
 
 
 if __name__ == '__main__':
-    train()
+    run()
