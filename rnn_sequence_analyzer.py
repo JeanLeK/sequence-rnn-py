@@ -67,8 +67,9 @@ class SequenceAnalyzer(object):
             dropout: {float}, dropout value.
         """
         print "Building Model..."
-        print ("    layer = %s , mapping = %s , nb_layers = %d , dropout = %.2f"
-               %(layer, mapping, nb_layers, dropout))
+        print ("    layer = %d-%s , mapping = %s , "
+               "nb_layers = %d , dropout = %.2f"
+               %(self.hidden_len, layer, mapping, nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
@@ -366,20 +367,72 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         print "\n"
 
 
-def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # pylint: disable=W0613
-          nb_iterations=4, nb_predictions=20, mapping='m2m',
-          sentence_length=40, step=40, mode='evaluate'):
+def train(analyzer, train_sequence, val_sequence, input_len,
+          batch_size=128, nb_epoch=50, nb_iterations=4,
+          sentence_length=40, step=40, mapping='m2m'):
     """
-    Trains the network and outputs the generated new sequence.
+    Trains the network.
+
+    Arguments:
+        analyzer: {SequenceAnalyzer}.
+        train_sequence: {list}, training sequence.
+        val_sequence: {list}, validation sequence.
+        input_len: {integer}, the number of classes, i.e., the input length of
+            neural network.
+        batch_size: {interger}, the number of sentences per batch.
+        nb_epoch: {integer}, number of epoches per iteration.
+        nb_iterations: {integer}, number of iterations.
+        sentence_length: {integer}, the length of each training sentence.
+        step: {integer}, the sample steps.
+        mapping: {string}, input to output mapping.
+            'o2o': one-to-one
+            'm2m': many-to-many
+    """
+    for iteration in range(1, nb_iterations+1):
+        # create training data, randomize the offset between steps
+        X_train, y_train = get_data(train_sequence, input_len, mapping=mapping,
+                                    sentence_length=sentence_length, step=step,
+                                    random_offset=False)
+        X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
+                                sentence_length=sentence_length, step=step,
+                                random_offset=False)
+        print ""
+        print "------------------------ Start Training ------------------------"
+        print "Iteration: ", iteration
+        print "Number of epoch per iteration: ", nb_epoch
+
+        # history of losses and accuracy
+        history = History()
+
+        # saves the model weights after each epoch
+        # if the validation loss decreased
+        checkpointer = ModelCheckpoint(filepath="weights.hdf5",
+                                       verbose=1, save_best_only=True)
+
+        # train the model
+        analyzer.model.fit(X_train, y_train,
+                           batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
+                           callbacks=[history, checkpointer],
+                           validation_data=(X_val, y_val))
+
+        analyzer.save_model("weights-after-iteration.hdf5")
+
+
+def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4, lr=0.001,
+        validation_split=0.05, # pylint: disable=W0613
+        nb_predictions=20, mapping='m2m', sentence_length=80, step=80,
+        mode='train'):
+    """
+    Train, evaluate, or predict.
 
     Arguments:
         hidden_len: {integer}, the size of a hidden layer.
         batch_size: {interger}, the number of sentences per batch.
         nb_epoch: {interger}, number of epoches per iteration.
+        nb_iterations: {integer}, number of iterations.
+        lr: {float}, learning rate.
         validation_split: {float} (0 ~ 1), percentage of validation data
             among training data.
-        show_accuracy: {boolean}, show accuracy during training.
-        nb_iterations: {integer}, number of iterations.
         nb_predictions: {integer}, number of the ids predicted.
         mapping: {string}, input to output mapping.
             'o2o': one-to-one
@@ -412,13 +465,15 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
     # rnn.plot_model()
 
     # load the previous model weights
-    rnn.load_model("weightsf4-61.hdf5")
-    # rnn.model.optimizer.lr.set_value(0.0001)
+    # rnn.load_model("weightsf4-61.hdf5")
+
+    # reset the learning rate
+    if lr != 0.001:
+        rnn.model.optimizer.lr.set_value(lr)
 
     if mode == 'predict':
         predict(val_sequence, input_len, rnn, nb_predictions=nb_predictions,
                 mapping=mapping, sentence_length=sentence_length)
-        return mode
     elif mode == 'evaluate':
         print "Metrics: " + ', '.join(rnn.model.metrics_names)
         X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
@@ -429,40 +484,20 @@ def train(hidden_len=512, batch_size=128, nb_epoch=50, validation_split=0.05, # 
                                      verbose=1)
         print "Loss: ", results[0]
         print "Accuracy: ", results[1]
-        return mode
-
-    # train model and output generated sequence
-    for iteration in range(1, nb_iterations+1):
-        # create training data, randomize the offset between steps
-        X_train, y_train = get_data(train_sequence, input_len, mapping=mapping,
-                                    sentence_length=sentence_length, step=step,
-                                    random_offset=False)
-        X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
-                                sentence_length=sentence_length, step=step,
-                                random_offset=False)
-        print ""
-        print "------------------------ Start Training ------------------------"
-        print "Iteration: ", iteration
-        print "Number of epoch per iteration: ", nb_epoch
-
-        # history of losses and accuracy
-        history = History()
-
-        # saves the model weights after each epoch
-        # if the validation loss decreased
-        checkpointer = ModelCheckpoint(filepath="weights.hdf5",
-                                       verbose=1, save_best_only=True)
-
-        # train the model
-        rnn.model.fit(X_train, y_train,
-                      batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
-                      callbacks=[history, checkpointer],
-                      validation_data=(X_val, y_val))
-
-        rnn.save_model("weights-after-iteration.hdf5")
+    elif mode == 'train':
+        try:
+            train(rnn, train_sequence, val_sequence, input_len,
+                  batch_size=batch_size, nb_epoch=nb_epoch,
+                  nb_iterations=nb_iterations,
+                  sentence_length=sentence_length,
+                  step=step, mapping=mapping)
+        except KeyboardInterrupt:
+            rnn.save_model("weights-stop.hdf5")
+    else:
+        print "The mode = %s is not correct!!!" %mode
 
     return mode
 
 
 if __name__ == '__main__':
-    train()
+    run()

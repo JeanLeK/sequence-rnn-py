@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/fluency03/sequence-rnn-py.svg?branch=master)](https://travis-ci.org/fluency03/sequence-rnn-py)
 
-This program analyze the sequence using (Uni-directional and Bi-directional) Recurrent Neural Network (RNN) with Long Short-Term Memory (LSTM) based on the python library Keras ([Documents](http://keras.io/) and [Github](https://github.com/fchollet/keras).
+This program analyze the sequence using (Uni-directional and Bi-directional) Recurrent Neural Network (RNN) with Long Short-Term Memory (LSTM) based on the python library Keras ([Documents](http://keras.io/) and [Github](https://github.com/fchollet/keras)).
 It is based on this [lstm_text_generation.py](https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py) and this [imdb_bidirectional_lstm.py]( https://github.com/fchollet/keras/blob/master/examples/imdb_bidirectional_lstm.py) examples of Keras.
 
 
