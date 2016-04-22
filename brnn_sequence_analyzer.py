@@ -436,7 +436,7 @@ def train(analyzer, train_sequence, val_sequence, input_len,
         analyzer.model.fit(X_train, y_train,
                            batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
                            callbacks=[history, checkpointer],
-                           validation_data=[X_val, y_val])
+                           validation_data=(X_val, y_val))
 
         analyzer.save_model("weights-after-iteration.hdf5")
 
