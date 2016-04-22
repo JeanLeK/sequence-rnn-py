@@ -384,6 +384,65 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         print "\n"
 
 
+
+def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
+    """
+    Scan the given sequence for detecting anormalies.
+
+    Arguments:
+        sequence: {lsit}, the original input sequence
+        input_len: {integer}, the number of unique id classes
+        analyzer: {SequenceAnalyzer}, the sequence analyzer
+        mapping: {string}, input to output mapping.
+            'o2o': one-to-one
+            'm2m': many-to-many
+        sentence_length: {integer}, the length of each sentence.
+    """
+    # sequence length
+    length = len(sequence)
+
+    # predicted probabilities for each id
+    # we assume the first sentence_length ids are true
+    prob = [1] * sentence_length + [0] * (length - sentence_length)
+
+    # generate elements
+    for start_index in xrange(length - sentence_length):
+        # seed sentence
+        X = sequence[start_index : start_index + sentence_length]
+        # print "X:      " + ' '.join(str(s).ljust(4) for s in sentence)
+
+        # Y_true
+        # y_true = sequence[start_index + 1 : start_index + sentence_length + 1]
+        # print "y_true: " + ' '.join(str(s).ljust(4) for s in y_true)
+        y_next_true = sequence[start_index + sentence_length]
+
+        seed = np.zeros((1, sentence_length, input_len))
+        # format input
+        for t in range(0, sentence_length):
+            seed[0, t, X[t]] = 1
+
+        # get predictionsverbose = 0, no logging
+        predictions = analyzer.model.predict(seed, verbose=0)[0]
+
+        # y_predicted
+        y_next_pred = 0
+        if mapping == 'o2o':
+            prob[start_index + sentence_length] = predictions[y_next_true]
+            y_next_pred = np.argmax(predictions)
+        elif mapping == 'm2m':
+            # next_sentence = []
+            # for pred in predictions:
+            #     next_sentence.append(np.argmax(pred))
+            # y_next_pred = next_sentence[-1]
+            # print "y_pred: " + ' '.join(str(id_).ljust(4)
+            #                             for id_ in next_sentence)
+            y_next_pred = np.argmax(predictions[-1])
+            prob[start_index + sentence_length] = predictions[-1][y_next_true]
+
+        return prob
+
+
+
 def train(analyzer, train_data, nb_training_samples,
           val_data, nb_validation_samples,
           nb_epoch=50, nb_iterations=4):
