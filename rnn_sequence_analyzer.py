@@ -417,7 +417,6 @@ def train(analyzer, train_sequence, val_sequence, input_len,
         analyzer.save_model("weights-after-iteration.hdf5")
 
 
-
 def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
     """
     Scan the given sequence for detecting anormalies.

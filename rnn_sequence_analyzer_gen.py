@@ -54,7 +54,7 @@ class SequenceAnalyzer(object):
 
     def build(self, layer='LSTM', mapping='m2m', nb_layers=2, dropout=0.2):
         """
-        Stacked LSTM with specified dropout rate (default 0.2), built with
+        Stacked RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
 
         Arguments:
@@ -122,7 +122,9 @@ class SequenceAnalyzer(object):
 
         self.model.add(Activation('softmax'))
 
-        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer='rmsprop',
+                           metrics=['accuracy'])
 
     def save_model(self, filename):
         """
@@ -184,7 +186,7 @@ class History(Callback):
         A method starting at the begining of the training.
 
         Arguments:
-            epoch: {integer}, the current epoch
+            epoch: {integer}, the current epoch.
             logs: {dictionary}, recording the training and validation
                 losses and accuracy of every epoch.
         """
@@ -383,6 +385,45 @@ def predict(sequence, input_len, analyzer, nb_predictions=80,
         print "\n"
 
 
+def train(analyzer, train_data, nb_training_samples,
+          val_data, nb_validation_samples,
+          nb_epoch=50, nb_iterations=4):
+    """
+    Trains the network.
+
+    Arguments:
+        analyzer: {SequenceAnalyzer}.
+        train_data: {tuple}, training data (X_train, y_train).
+        val_data: {tuple}, validation data (X_val, y_val).
+        nb_training_samples: {integer}, the number training samples.
+        nb_validation_samples: {integer}, the number validation samples.
+        nb_iterations: {integer}, number of iterations.
+        sentence_length: {integer}, the length of each training sentence.
+    """
+    for iteration in range(1, nb_iterations+1):
+        print ""
+        print "------------------------ Start Training ------------------------"
+        print "Iteration: ", iteration
+        print "Number of epoch per iteration: ", nb_epoch
+
+        # history of losses and accuracy
+        history = History()
+
+        # saves the model weights after each epoch
+        # if the validation loss decreased
+        checkpointer = ModelCheckpoint(filepath="weights.hdf5",
+                                       verbose=1, save_best_only=True)
+
+        # train the model with data generator
+        analyzer.model.fit_generator(train_data,
+                                     samples_per_epoch=nb_training_samples,
+                                     nb_epoch=nb_epoch, verbose=1,
+                                     callbacks=[history, checkpointer],
+                                     validation_data=val_data,
+                                     nb_val_samples=nb_validation_samples)
+
+        analyzer.save_model("weights-after-iteration.hdf5")
+
 
 def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
     """
@@ -439,47 +480,6 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
             prob[start_index + sentence_length] = predictions[-1][y_next_true]
 
         return prob
-
-
-
-def train(analyzer, train_data, nb_training_samples,
-          val_data, nb_validation_samples,
-          nb_epoch=50, nb_iterations=4):
-    """
-    Trains the network.
-
-    Arguments:
-        analyzer: {SequenceAnalyzer}.
-        train_data: {tuple}, training data (X_train, y_train).
-        val_data: {tuple}, validation data (X_val, y_val).
-        nb_training_samples: {integer}, the number training samples.
-        nb_validation_samples: {integer}, the number validation samples.
-        nb_iterations: {integer}, number of iterations.
-        sentence_length: {integer}, the length of each training sentence.
-    """
-    for iteration in range(1, nb_iterations+1):
-        print ""
-        print "------------------------ Start Training ------------------------"
-        print "Iteration: ", iteration
-        print "Number of epoch per iteration: ", nb_epoch
-
-        # history of losses and accuracy
-        history = History()
-
-        # saves the model weights after each epoch
-        # if the validation loss decreased
-        checkpointer = ModelCheckpoint(filepath="weights.hdf5",
-                                       verbose=1, save_best_only=True)
-
-        # train the model with data generator
-        analyzer.model.fit_generator(train_data,
-                                     samples_per_epoch=nb_training_samples,
-                                     nb_epoch=nb_epoch, verbose=1,
-                                     callbacks=[history, checkpointer],
-                                     validation_data=val_data,
-                                     nb_val_samples=nb_validation_samples)
-
-        analyzer.save_model("weights-after-iteration.hdf5")
 
 
 def run(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=50,
