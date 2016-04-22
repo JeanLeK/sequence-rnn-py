@@ -26,10 +26,9 @@ import csv
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers.core import Activation, Dense, Dropout
-from keras.layers.recurrent import LSTM, GRU
+from keras.layers import Input, Activation, Dense, Dropout, LSTM, GRU, merge
 from keras.layers.wrappers import TimeDistributed
-from keras.models import Sequential, Graph
+from keras.models import Sequential, Model
 from keras.optimizers import RMSprop # pylint: disable=W0611
 from keras.utils.visualize_util import plot
 
@@ -190,7 +189,6 @@ class BRNN(SequenceAnalyzer):
     def __init__(self, sentence_length, input_len, hidden_len, output_len):
         super(BRNN, self).__init__(sentence_length,
                                    input_len, hidden_len, output_len)
-        self.model = Graph()
 
     @override
     def build(self, layer='LSTM', mapping='m2m', nb_layers=2, dropout=0.2):
@@ -242,60 +240,54 @@ class BRNN(SequenceAnalyzer):
                 return_sequences.append(True)
 
         # add input
-        self.model.add_input(input_shape=(self.sentence_length, self.input_len),
-                             name='input', dtype='float')
+        input_layer = Input(shape=(self.sentence_length, self.input_len),
+                            dtype='float32')
 
         # first Bi-directional LSTM layer
-        self.model.add_node(LAYER(self.hidden_len,
-                                  return_sequences=return_sequences[0]),
-                            name='forward1', input='input')
-        self.model.add_node(Dropout(dropout),
-                            name='forward_dropout1', input='forward1')
-        self.model.add_node(LAYER(self.hidden_len,
-                                  return_sequences=return_sequences[0],
-                                  go_backwards=True),
-                            name='backward1', input='input')
-        self.model.add_node(Dropout(dropout),
-                            name='backward_dropout1', input='backward1')
+        forward1 = LAYER(self.hidden_len,
+                         return_sequences=return_sequences[0])(input_layer)
+        forward_dropout1 = Dropout(dropout)(forward1) # pylint: disable=W0612
+        backward1 = LAYER(self.hidden_len,
+                          return_sequences=return_sequences[0],
+                          go_backwards=True)(input_layer)
+        backward_dropout1 = Dropout(dropout)(backward1) # pylint: disable=W0612
 
         # following Bi-directional layers
         for nl in range(nb_layers-1):
-            self.model.add_node(LAYER(self.hidden_len,
-                                      return_sequences=return_sequences[nl+1]),
-                                name='forward' + str(nl+2),
-                                input='forward_dropout' + str(nl+1))
-            self.model.add_node(Dropout(dropout),
-                                name='forward_dropout' + str(nl+2),
-                                input='forward' + str(nl+2))
-            self.model.add_node(LAYER(self.hidden_len,
-                                      return_sequences=return_sequences[nl+1],
-                                      go_backwards=True),
-                                name='backward' + str(nl+2),
-                                input='backward_dropout' + str(nl+1))
-            self.model.add_node(Dropout(dropout),
-                                name='backward_dropout' + str(nl+2),
-                                input='backward' + str(nl+2))
+            exec("%s = LAYER(self.hidden_len, return_sequences=%s)(%s)"
+                 %('forward' + str(nl+2),
+                   return_sequences[nl+1],
+                   'forward_dropout' + str(nl+1)))
+            exec("%s = Dropout(dropout)(%s)"
+                 %('forward_dropout' + str(nl+2),
+                   'forward' + str(nl+2)))
+            exec(("%s = LAYER(self.hidden_len, return_sequences=%s, "
+                  "go_backwards=True)(%s)")
+                 %('backward' + str(nl+2),
+                   return_sequences[nl+1],
+                   'backward_dropout' + str(nl+1)))
+            exec("%s = Dropout(dropout)(%s)"
+                 %('backward_dropout' + str(nl+2),
+                   'backward' + str(nl+2)))
 
-        # self.model.add_node(Dropout(dropout), name='dropout',
-                            # inputs=['forward', 'backward'])
+        merged_layer = merge([locals()['forward_dropout' + str(nb_layers)],
+                              locals()['backward_dropout' + str(nb_layers)]],
+                             mode='concat', concat_axis=-1)
+
         if mapping == 'o2o':
-            self.model.add_node(Dense(self.output_len, activation='softmax'),
-                                name='softmax',
-                                inputs=['forward_dropout' + str(nb_layers),
-                                        'backward_dropout' + str(nb_layers)])
+            output_layer = Dense(self.output_len,
+                                 activation='softmax')(merged_layer)
         elif mapping == 'm2m':
-            self.model.add_node(TimeDistributed(Dense(self.output_len,
-                                                      activation='softmax')),
-                                name='softmax',
-                                inputs=['forward_dropout' + str(nb_layers),
-                                        'backward_dropout' + str(nb_layers)])
+            output_layer = TimeDistributed(
+                Dense(self.output_len, activation='softmax'))(merged_layer)
 
         # add ouput
-        self.model.add_output(name='output', input='softmax')
+        self.model = Model(input=input_layer, output=output_layer)
 
         # try using different optimizers and different optimizer configs
-        self.model.compile(loss={'output': 'categorical_crossentropy'},
-                           optimizer='rmsprop')
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer='rmsprop',
+                           metrics=['accuracy'])
 
 
 class History(Callback):

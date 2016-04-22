@@ -21,8 +21,7 @@ import csv
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers.core import Activation, Dense, Dropout
-from keras.layers.recurrent import LSTM, GRU
+from keras.layers import Activation, Dense, Dropout, LSTM, GRU
 from keras.layers.wrappers import TimeDistributed
 from keras.models import Sequential
 from keras.optimizers import RMSprop # pylint: disable=W0611
