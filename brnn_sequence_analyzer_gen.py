@@ -529,6 +529,7 @@ def run(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=50,
             'train': train and predict
             'predict': only predict by loading existing model weights
             'evaluate': evaluate the model in evaluation data set
+            'detect': detect a new log sequence for the probabilities
     """
     # get parameters and dimensions of the model
     print "Loading training data..."
