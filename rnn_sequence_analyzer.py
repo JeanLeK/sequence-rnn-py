@@ -549,6 +549,9 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4, lr=0.001,
                   step=step, mapping=mapping)
         except KeyboardInterrupt:
             rnn.save_model("weights-stop.hdf5")
+    elif mode == 'detect':
+        detect(val_sequence, input_len, rnn, mapping=mapping,
+               sentence_length=sentence_length)
     else:
         print "The mode = %s is not correct!!!" %mode
 

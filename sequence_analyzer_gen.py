@@ -699,6 +699,9 @@ def run(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=50,
                   nb_epoch=nb_epoch, nb_iterations=nb_iterations)
         except KeyboardInterrupt:
             analyzer.save_model("weights-stop.hdf5")
+    elif mode == 'detect':
+        detect(val_sequence, input_len, analyzer, mapping=mapping,
+               sentence_length=sentence_length)
     else:
         print "The mode = %s is not correct!!!" %mode
 
