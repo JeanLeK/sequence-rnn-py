@@ -50,7 +50,8 @@ class SequenceAnalyzer(object):
         self.output_len = output_len
         self.model = None
 
-    def build(self, layer='LSTM', mapping='m2m', nb_layers=2, dropout=0.2):
+    def build(self, layer='LSTM', mapping='m2m', learning_rate=0.001,
+              nb_layers=2, dropout=0.2):
         """
         Bidirectional RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
@@ -62,13 +63,15 @@ class SequenceAnalyzer(object):
             mapping: {string}, input to output mapping.
                 'o2o': one-to-one
                 'm2m': many-to-many
+            learning_rate: {float}, learning rate.
             nb_layers: {integer}, number of layers in total.
             dropout: {float}, dropout value.
         """
         print "Building Model..."
-        print ("    layer = %d-%s , mapping = %s , "
+        print ("    layer = %d-%s , mapping = %s , learning rate = %.5f "
                "nb_layers = %d , dropout = %.2f"
-               %(self.hidden_len, layer, mapping, nb_layers, dropout))
+               %(self.hidden_len, layer, mapping, learning_rate,
+                 nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
@@ -143,9 +146,10 @@ class SequenceAnalyzer(object):
         # add ouput
         self.model = Model(input=input_layer, output=output_layer)
 
+        rms = RMSprop(lr=learning_rate)
         # try using different optimizers and different optimizer configs
         self.model.compile(loss='categorical_crossentropy',
-                           optimizer='rmsprop',
+                           optimizer=rms,
                            metrics=['accuracy'])
 
     def save_model(self, filename):
@@ -498,10 +502,9 @@ def train(analyzer, train_sequence, val_sequence, input_len,
         analyzer.save_model("weights-after-iteration.hdf5")
 
 
-def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4, lr=0.001,
-        validation_split=0.05, # pylint: disable=W0613
-        nb_predictions=20, mapping='m2m', sentence_length=80, step=80,
-        mode='train'):
+def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
+        learning_rate=0.001, nb_predictions=20, mapping='m2m',
+        sentence_length=80, step=80, mode='train'):
     """
     Train, evaluate, or predict.
 
@@ -510,9 +513,7 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4, lr=0.001,
         batch_size: {interger}, the number of sentences per batch.
         nb_epoch: {interger}, number of epoches per iteration.
         nb_iterations: {integer}, number of iterations.
-        lr: {float}, learning rate.
-        validation_split: {float} (0 ~ 1), percentage of validation data
-            among training data.
+        learning_rate: {float}, learning rate.
         nb_predictions: {integer}, number of the ids predicted.
         mapping: {string}, input to output mapping.
             'o2o': one-to-one
@@ -540,17 +541,14 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4, lr=0.001,
     brnn = SequenceAnalyzer(sentence_length, input_len, hidden_len, input_len)
 
     # build model
-    brnn.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)
+    brnn.build(layer='LSTM', mapping=mapping, learning_rate=learning_rate,
+               nb_layers=2, dropout=0.2)
 
     # plot model
     # brnn.plot_model()
 
     # load the previous model weights
     # brnn.load_model("weightsf4-61.hdf5")
-
-    # reset the learning rate
-    if lr != 0.001:
-        brnn.model.optimizer.lr.set_value(lr)
 
     if mode == 'predict':
         predict(val_sequence, input_len, brnn, nb_predictions=nb_predictions,

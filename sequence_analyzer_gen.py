@@ -56,7 +56,7 @@ class SequenceAnalyzer(object):
         # model is defined at child class
         self.model = None
 
-    def build(self, layer, mapping, nb_layers, dropout):
+    def build(self, layer, mapping, learning_rate, nb_layers, dropout):
         """
         Build model.
         """
@@ -107,7 +107,8 @@ class URNN(SequenceAnalyzer):
         self.model = Sequential()
 
     @override
-    def build(self, layer='LSTM', mapping='m2m', nb_layers=2, dropout=0.2):
+    def build(self, layer='LSTM', mapping='m2m', learning_rate=0.001,
+              nb_layers=2, dropout=0.2):
         """
         Stacked RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
@@ -119,13 +120,15 @@ class URNN(SequenceAnalyzer):
             mapping: {string}, input to output mapping.
                 'o2o': one-to-one
                 'm2m': many-to-many
+            learning_rate: {float}, learning rate.
             nb_layers: {integer}, number of layers in total.
             dropout: {float}, dropout value.
         """
         print "Building Model..."
-        print ("    layer = %d-%s , mapping = %s , "
+        print ("    layer = %d-%s , mapping = %s , learning rate = %.5f "
                "nb_layers = %d , dropout = %.2f"
-               %(self.hidden_len, layer, mapping, nb_layers, dropout))
+               %(self.hidden_len, layer, mapping, learning_rate,
+                 nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
@@ -177,8 +180,9 @@ class URNN(SequenceAnalyzer):
 
         self.model.add(Activation('softmax'))
 
+        rms = RMSprop(lr=learning_rate)
         self.model.compile(loss='categorical_crossentropy',
-                           optimizer='rmsprop',
+                           optimizer=rms,
                            metrics=['accuracy'])
 
 
@@ -191,7 +195,8 @@ class BRNN(SequenceAnalyzer):
                                    input_len, hidden_len, output_len)
 
     @override
-    def build(self, layer='LSTM', mapping='m2m', nb_layers=2, dropout=0.2):
+    def build(self, layer='LSTM', mapping='m2m', learning_rate=0.001,
+              nb_layers=2, dropout=0.2):
         """
         Bidirectional RNN with specified dropout rate (default 0.2), built with
         softmax activation, cross entropy loss and rmsprop optimizer.
@@ -203,13 +208,15 @@ class BRNN(SequenceAnalyzer):
             mapping: {string}, input to output mapping.
                 'o2o': one-to-one
                 'm2m': many-to-many
+            learning_rate: {float}, learning rate.
             nb_layers: {integer}, number of layers in total.
             dropout: {float}, dropout value.
         """
         print "Building Model..."
-        print ("    layer = %d-%s , mapping = %s , "
+        print ("    layer = %d-%s , mapping = %s , learning rate = %.5f "
                "nb_layers = %d , dropout = %.2f"
-               %(self.hidden_len, layer, mapping, nb_layers, dropout))
+               %(self.hidden_len, layer, mapping, learning_rate,
+                 nb_layers, dropout))
 
         # check the layer type: LSTM or GRU
         if layer == 'LSTM':
@@ -284,9 +291,10 @@ class BRNN(SequenceAnalyzer):
         # add ouput
         self.model = Model(input=input_layer, output=output_layer)
 
+        rms = RMSprop(lr=learning_rate)
         # try using different optimizers and different optimizer configs
         self.model.compile(loss='categorical_crossentropy',
-                           optimizer='rmsprop',
+                           optimizer=rms,
                            metrics=['accuracy'])
 
 
@@ -611,7 +619,7 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
 
 
 def run(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=50,
-        nb_iterations=4, lr=0.001, validation_split=0.05, nb_predictions=20,
+        nb_iterations=4, learning_rate=0.001, nb_predictions=20,
         mapping='m2m', sentence_length=80, step=80, mode='train'):
     """
     Train, evaluate, or predict.
@@ -622,9 +630,7 @@ def run(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=50,
         nb_batch: {integer}, number of batches to be trained durign each epoch.
         nb_epoch: {interger}, number of epoches per iteration.
         nb_iterations: {integer}, number of iterations.
-        lr: {float}, learning rate.
-        validation_split: {float} (0 ~ 1), percentage of validation data
-            among training data.
+        learning_rate: {float}, learning rate.
         nb_predictions: {integer}, number of the ids predicted.
         mapping: {string}, input to output mapping.
             'o2o': one-to-one
@@ -663,17 +669,14 @@ def run(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=50,
                                 input_len, hidden_len, input_len)
 
     # build model
-    analyzer.build(layer='LSTM', mapping=mapping, nb_layers=2, dropout=0.2)
+    analyzer.build(layer='LSTM', mapping=mapping, learning_rate=learning_rate,
+                   nb_layers=2, dropout=0.2)
 
     # plot model
     # analyzer.plot_model()
 
     # load the previous model weights
     # analyzer.load_model("weightsf4-61.hdf5")
-
-    # reset the learning rate
-    if lr != 0.001:
-        analyzer.model.optimizer.lr.set_value(lr)
 
     if mode == 'predict':
         predict(val_sequence, input_len, analyzer, nb_predictions=nb_predictions,
@@ -692,7 +695,7 @@ def run(hidden_len=512, batch_size=128, nb_batch=200, nb_epoch=50,
     elif mode == 'train':
         # number of training sampes and validation samples
         nb_training_samples = batch_size * nb_batch
-        nb_validation_samples = int(nb_training_samples * validation_split)
+        nb_validation_samples = int(nb_training_samples * 0.05)
 
         try:
             train(analyzer, train_data, nb_training_samples,
