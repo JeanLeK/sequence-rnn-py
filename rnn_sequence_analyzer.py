@@ -18,6 +18,8 @@ import glob
 # import os
 import sys
 import csv
+import time
+import matplotlib.pyplot as plt
 import numpy as np
 
 from keras.callbacks import Callback, ModelCheckpoint
@@ -441,46 +443,68 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
     # we assume the first sentence_length ids are true
     prob = [1] * sentence_length + [0] * (length - sentence_length)
 
-    # generate elements
-    for start_index in xrange(length - sentence_length):
-        # seed sentence
-        X = sequence[start_index : start_index + sentence_length]
-        # print "X:      " + ' '.join(str(s).ljust(4) for s in sentence)
+    start_time = time.time()
+    try:
+        # generate elements
+        for start_index in xrange(length - sentence_length):
+            # seed sentence
+            X = sequence[start_index : start_index + sentence_length]
+            # print "X:      " + ' '.join(str(s).ljust(4) for s in sentence)
 
-        # Y_true
-        # y_true = sequence[start_index + 1 : start_index + sentence_length + 1]
-        # print "y_true: " + ' '.join(str(s).ljust(4) for s in y_true)
-        y_next_true = sequence[start_index + sentence_length]
+            # Y_true
+            # y_true = sequence[start_index + 1 : start_index + sentence_length + 1]
+            # print "y_true: " + ' '.join(str(s).ljust(4) for s in y_true)
+            y_next_true = sequence[start_index + sentence_length]
 
-        seed = np.zeros((1, sentence_length, input_len))
-        # format input
-        for t in range(0, sentence_length):
-            seed[0, t, X[t]] = 1
+            seed = np.zeros((1, sentence_length, input_len))
+            # format input
+            for t in range(0, sentence_length):
+                seed[0, t, X[t]] = 1
 
-        # get predictionsverbose = 0, no logging
-        predictions = analyzer.model.predict(seed, verbose=0)[0]
+            # get predictionsverbose = 0, no logging
+            predictions = analyzer.model.predict(seed, verbose=0)[0]
 
-        # y_predicted
-        y_next_pred = 0
-        if mapping == 'o2o':
-            prob[start_index + sentence_length] = predictions[y_next_true]
-            y_next_pred = np.argmax(predictions)
-        elif mapping == 'm2m':
-            # next_sentence = []
-            # for pred in predictions:
-            #     next_sentence.append(np.argmax(pred))
-            # y_next_pred = next_sentence[-1]
-            # print "y_pred: " + ' '.join(str(id_).ljust(4)
-            #                             for id_ in next_sentence)
-            y_next_pred = np.argmax(predictions[-1])
-            prob[start_index + sentence_length] = predictions[-1][y_next_true]
+            # y_predicted
+            y_next_pred = 0
+            next_prob = 0
+            if mapping == 'o2o':
+                next_prob = predictions[y_next_true]
+                prob[start_index + sentence_length] = next_prob
+                y_next_pred = np.argmax(predictions)
+            elif mapping == 'm2m':
+                # next_sentence = []
+                # for pred in predictions:
+                #     next_sentence.append(np.argmax(pred))
+                # y_next_pred = next_sentence[-1]
+                # print "y_pred: " + ' '.join(str(id_).ljust(4)
+                #                             for id_ in next_sentence)
+                y_next_pred = np.argmax(predictions[-1])
+                next_prob = predictions[-1][y_next_true]
+                prob[start_index + sentence_length] = next_prob
 
-        return prob
+            print start_index, next_prob
+    except KeyboardInterrupt:
+        # print "    |-Write the clusters into %s ..." %self.cluster_file
+        with open('prob.txt', 'w') as prob_file:
+            for p in prob:
+                prob_file.write(str(p) + '\n')
+
+        plt.plot(prob, 'r*')
+        plt.xlim(0, 1000)
+        plt.ylim(0, 1)
+        plt.savefig("prob.png")
+        plt.clf()
+        plt.cla()
+
+    stop_time = time.time()
+    print "--- %s seconds ---\n" % (stop_time - start_time)
+
+    return prob
 
 
 def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
         learning_rate=0.001, nb_predictions=20, mapping='m2m',
-        sentence_length=80, step=80, mode='train'):
+        sentence_length=40, step=40, mode='detect'):
     """
     Train, evaluate, or predict.
 
@@ -524,12 +548,14 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
     # rnn.plot_model()
 
     # load the previous model weights
-    # rnn.load_model("weightsf4-61.hdf5")
+    rnn.load_model("./weights/weightsf4-61.hdf5")
 
     if mode == 'predict':
+        print "Predict..."
         predict(val_sequence, input_len, rnn, nb_predictions=nb_predictions,
                 mapping=mapping, sentence_length=sentence_length)
     elif mode == 'evaluate':
+        print "Evaluate..."
         print "Metrics: " + ', '.join(rnn.model.metrics_names)
         X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
                                 sentence_length=sentence_length, step=step,
@@ -540,6 +566,7 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
         print "Loss: ", results[0]
         print "Accuracy: ", results[1]
     elif mode == 'train':
+        print "Train..."
         try:
             train(rnn, train_sequence, val_sequence, input_len,
                   batch_size=batch_size, nb_epoch=nb_epoch,
@@ -549,6 +576,7 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
         except KeyboardInterrupt:
             rnn.save_model("weights-stop.hdf5")
     elif mode == 'detect':
+        print "Detect..."
         detect(val_sequence, input_len, rnn, mapping=mapping,
                sentence_length=sentence_length)
     else:
