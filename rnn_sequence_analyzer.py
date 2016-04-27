@@ -130,16 +130,17 @@ class SequenceAnalyzer(object):
                            optimizer=rms,
                            metrics=['accuracy'])
 
-    def save_model(self, filename):
+    def save_model(self, filename, overwrite=False):
         """
         Save the model weight into a hdf5 file.
 
         Arguments:
             filename: {string}, the name/path to the file
                 to which the weights are going to be saved.
+            overwrite: {bool}, overwrite existing file.
         """
         print "Save Weights %s ..." %filename
-        self.model.save_weights(filename)
+        self.model.save_weights(filename, overwrite=overwrite)
 
     def load_model(self, filename):
         """
