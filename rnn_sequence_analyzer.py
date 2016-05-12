@@ -14,6 +14,7 @@ Author: Chang Liu (fluency03)
 Data: 2016-03-17
 """
 
+from math import log
 import glob
 # import os
 import sys
@@ -421,7 +422,7 @@ def train(analyzer, train_sequence, val_sequence, input_len,
                            callbacks=[history, checkpointer],
                            validation_data=(X_val, y_val))
 
-        analyzer.save_model("weights-after-iteration.hdf5")
+        analyzer.save_model("weights-after-iteration.hdf5", overwrite=True)
 
 
 def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
@@ -443,6 +444,7 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
     # predicted probabilities for each id
     # we assume the first sentence_length ids are true
     prob = [1] * sentence_length + [0] * (length - sentence_length)
+    log_prob = [0] * length
 
     start_time = time.time()
     try:
@@ -470,7 +472,7 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
             next_prob = 0
             if mapping == 'o2o':
                 next_prob = predictions[y_next_true]
-                prob[start_index + sentence_length] = next_prob
+                # prob[start_index + sentence_length] = next_prob
                 y_next_pred = np.argmax(predictions)
             elif mapping == 'm2m':
                 # next_sentence = []
@@ -481,21 +483,33 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
                 #                             for id_ in next_sentence)
                 y_next_pred = np.argmax(predictions[-1])
                 next_prob = predictions[-1][y_next_true]
-                prob[start_index + sentence_length] = next_prob
+
+            next_prob = 1.0 if y_next_pred == y_next_true else next_prob
+            prob[start_index + sentence_length] = next_prob
+            log_prob[start_index + sentence_length] = -log(next_prob)
 
             print start_index, next_prob
     except KeyboardInterrupt:
+        pass
         # print "    |-Write the clusters into %s ..." %self.cluster_file
-        with open('prob.txt', 'w') as prob_file:
-            for p in prob:
-                prob_file.write(str(p) + '\n')
+        # with open('prob_new.txt', 'w') as prob_file:
+        #     for p in prob:
+        #         prob_file.write(str(p) + '\n')
+        #
+        # plt.plot(prob, 'r*')
+        # plt.xlim(0, 1000)
+        # plt.ylim(0, 1)
+        # plt.savefig("prob1.png")
+        # plt.clf()
+        # plt.cla()
 
-        plt.plot(prob, 'r*')
-        plt.xlim(0, 1000)
-        plt.ylim(0, 1)
-        plt.savefig("prob.png")
-        plt.clf()
-        plt.cla()
+    with open('prob_new.txt', 'w') as prob_file:
+        for p in prob:
+            prob_file.write(str(p) + '\n')
+
+    with open('log_prob_new.txt', 'w') as prob_file:
+        for log_p in log_prob:
+            prob_file.write(str(log_p) + '\n')
 
     stop_time = time.time()
     print "--- %s seconds ---\n" % (stop_time - start_time)
@@ -504,8 +518,8 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
 
 
 def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
-        learning_rate=0.001, nb_predictions=20, mapping='m2m',
-        sentence_length=40, step=40, mode='detect'):
+        learning_rate=0.001, nb_predictions=20, mapping='o2o',
+        sentence_length=40, step=40, mode='evaluate'):
     """
     Train, evaluate, or predict.
 
@@ -543,13 +557,13 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
 
     # build model
     rnn.build(layer='LSTM', mapping=mapping, learning_rate=learning_rate,
-              nb_layers=2, dropout=0.2)
+              nb_layers=3, dropout=0.5)
 
     # plot model
     # rnn.plot_model()
 
     # load the previous model weights
-    rnn.load_model("./weights/weightsf4-61.hdf5")
+    rnn.load_model("weights-after-iteration-l1.hdf5")
 
     if mode == 'predict':
         print "Predict..."
@@ -575,7 +589,7 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
                   sentence_length=sentence_length,
                   step=step, mapping=mapping)
         except KeyboardInterrupt:
-            rnn.save_model("weights-stop.hdf5")
+            rnn.save_model("weights-stop.hdf5", overwrite=True)
     elif mode == 'detect':
         print "Detect..."
         detect(val_sequence, input_len, rnn, mapping=mapping,
