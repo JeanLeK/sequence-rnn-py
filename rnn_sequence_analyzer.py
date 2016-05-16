@@ -71,7 +71,7 @@ class SequenceAnalyzer(object):
             dropout: {float}, dropout value.
         """
         print "Building Model..."
-        print ("    layer = %d-%s , mapping = %s , learning rate = %.5f "
+        print ("    layer = %d-%s , mapping = %s , learning rate = %.5f, "
                "nb_layers = %d , dropout = %.2f"
                %(self.hidden_len, layer, mapping, learning_rate,
                  nb_layers, dropout))
@@ -448,6 +448,9 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
     prob = [1] * sentence_length + [0] * (length - sentence_length)
     log_prob = [0] * length
 
+    # count the number of correct predictions
+    nb_correct = 0
+
     start_time = time.time()
     try:
         # generate elements
@@ -465,22 +468,29 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
             predictions = analyzer.model.predict(seed, verbose=0)[0]
 
             # y_predicted
-            y_next_pred = {}
+            y_next_pred = []
             next_prob = 0
             if mapping == 'o2o':
+                # y_next_pred[np.argmax(predictions)] = True
+                y_next_pred = np.argsort(predictions)[-nb_options:][::-1]
                 next_prob = predictions[y_next_true]
-                y_next_pred[np.argmax(predictions)] = True
             elif mapping == 'm2m':
-                y_next_pred[np.argmax(predictions[-1])] = True
+                # y_next_pred[np.argmax(predictions[-1])] = True
+                y_next_pred = np.argsort(predictions[-1])[-nb_options:][::-1]
                 next_prob = predictions[-1][y_next_true]
 
             next_prob = 1.0 if y_next_true in y_next_pred else next_prob
+            nb_correct = ((nb_correct + 1)
+                          if y_next_true in y_next_pred
+                          else nb_correct)
             prob[start_index + sentence_length] = next_prob
             log_prob[start_index + sentence_length] = -log(next_prob)
 
-            print start_index, next_prob
+            # print start_index, next_prob
     except KeyboardInterrupt:
         print "KeyboardInterrupt"
+
+    print "Accuracy: %.3f%%" %(nb_correct * 100.0 / (start_index + 1))
 
     print "    |-Plot figures ..."
     plot_and_write_prob(prob, "prob", [0, 50000, 0, 1], 'Normal')
@@ -528,9 +538,9 @@ def plot_and_write_prob(prob, filename, plot_range, scale):
             prob_file.write(str(p) + '\n')
 
 
-def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
-        learning_rate=0.001, nb_predictions=20, mapping='o2o',
-        sentence_length=40, step=40, mode='evaluate'):
+def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=5,
+        learning_rate=0.001, nb_predictions=20, mapping='m2m',
+        sentence_length=40, step=40, mode='train'):
     """
     Train, evaluate, or predict.
 
