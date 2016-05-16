@@ -425,7 +425,8 @@ def train(analyzer, train_sequence, val_sequence, input_len,
         analyzer.save_model("weights-after-iteration.hdf5", overwrite=True)
 
 
-def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
+def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
+           nb_options=1):
     """
     Scan the given sequence for detecting anormalies.
 
@@ -437,6 +438,7 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
             'o2o': one-to-one
             'm2m': many-to-many
         sentence_length: {integer}, the length of each sentence.
+        nb_options: {interger}, number of predicted options.
     """
     # sequence length
     length = len(sequence)
@@ -452,11 +454,6 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
         for start_index in xrange(length - sentence_length):
             # seed sentence
             X = sequence[start_index : start_index + sentence_length]
-            # print "X:      " + ' '.join(str(s).ljust(4) for s in sentence)
-
-            # Y_true
-            # y_true = sequence[start_index + 1 : start_index + sentence_length + 1]
-            # print "y_true: " + ' '.join(str(s).ljust(4) for s in y_true)
             y_next_true = sequence[start_index + sentence_length]
 
             seed = np.zeros((1, sentence_length, input_len))
@@ -464,57 +461,71 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40):
             for t in range(0, sentence_length):
                 seed[0, t, X[t]] = 1
 
-            # get predictionsverbose = 0, no logging
+            # get predictions, verbose = 0, no logging
             predictions = analyzer.model.predict(seed, verbose=0)[0]
 
             # y_predicted
-            y_next_pred = 0
+            y_next_pred = {}
             next_prob = 0
             if mapping == 'o2o':
                 next_prob = predictions[y_next_true]
-                # prob[start_index + sentence_length] = next_prob
-                y_next_pred = np.argmax(predictions)
+                y_next_pred[np.argmax(predictions)] = True
             elif mapping == 'm2m':
-                # next_sentence = []
-                # for pred in predictions:
-                #     next_sentence.append(np.argmax(pred))
-                # y_next_pred = next_sentence[-1]
-                # print "y_pred: " + ' '.join(str(id_).ljust(4)
-                #                             for id_ in next_sentence)
-                y_next_pred = np.argmax(predictions[-1])
+                y_next_pred[np.argmax(predictions[-1])] = True
                 next_prob = predictions[-1][y_next_true]
 
-            next_prob = 1.0 if y_next_pred == y_next_true else next_prob
+            next_prob = 1.0 if y_next_true in y_next_pred else next_prob
             prob[start_index + sentence_length] = next_prob
             log_prob[start_index + sentence_length] = -log(next_prob)
 
             print start_index, next_prob
     except KeyboardInterrupt:
-        pass
-        # print "    |-Write the clusters into %s ..." %self.cluster_file
-        # with open('prob_new.txt', 'w') as prob_file:
-        #     for p in prob:
-        #         prob_file.write(str(p) + '\n')
-        #
-        # plt.plot(prob, 'r*')
-        # plt.xlim(0, 1000)
-        # plt.ylim(0, 1)
-        # plt.savefig("prob1.png")
-        # plt.clf()
-        # plt.cla()
+        print "KeyboardInterrupt"
 
-    with open('prob_new.txt', 'w') as prob_file:
-        for p in prob:
-            prob_file.write(str(p) + '\n')
-
-    with open('log_prob_new.txt', 'w') as prob_file:
-        for log_p in log_prob:
-            prob_file.write(str(log_p) + '\n')
+    print "    |-Plot figures ..."
+    plot_and_write_prob(prob, "prob", [0, 50000, 0, 1], 'Normal')
+    plot_and_write_prob(log_prob, "log_prob", [0, 50000, 0, 25], 'Log')
 
     stop_time = time.time()
     print "--- %s seconds ---\n" % (stop_time - start_time)
 
     return prob
+
+
+def plot_hist(prob, filename, plot_range, scale, cumulative, normed=True):
+    """
+    Plot and write the (cumulative) probabilties distribution.
+    """
+    if scale == 'Log':
+        prob = [-p for p in prob]
+    plt.hist(prob, bins=100, normed=normed, cumulative=cumulative)
+    plt.ylabel('Probability in %s Scale' %scale)
+    plt.ylabel('Distribution: Normalized=%s, Cumulated=%s.' %(normed,
+                                                              cumulative))
+    plt.grid(True)
+    plt.axis(plot_range)
+    plt.savefig(filename + ".png")
+    plt.clf()
+    plt.cla()
+
+
+def plot_and_write_prob(prob, filename, plot_range, scale):
+    """
+    Plot and write the probabilties for each of the log.
+    """
+    # print "    |-Plot figures ..."
+    plt.plot(prob, 'r*')
+    plt.xlabel('Log')
+    plt.ylabel('Probability in %s Scale' %scale)
+    plt.axis(plot_range)
+    plt.savefig(filename + ".png")
+    plt.clf()
+    plt.cla()
+
+    # print "    |-Write probabilities ..."
+    with open(filename + '.txt', 'w') as prob_file:
+        for p in prob:
+            prob_file.write(str(p) + '\n')
 
 
 def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
@@ -563,7 +574,7 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
     # rnn.plot_model()
 
     # load the previous model weights
-    rnn.load_model("weights-after-iteration-l1.hdf5")
+    # rnn.load_model("weights-after-iteration-l1.hdf5")
 
     if mode == 'predict':
         print "Predict..."
@@ -593,7 +604,7 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=4,
     elif mode == 'detect':
         print "Detect..."
         detect(val_sequence, input_len, rnn, mapping=mapping,
-               sentence_length=sentence_length)
+               sentence_length=sentence_length, nb_options=1)
     else:
         print "The mode = %s is not correct!!!" %mode
 
