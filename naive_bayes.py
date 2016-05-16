@@ -39,7 +39,7 @@ def get_sequence(filepath):
     return sequence, vocab_size
 
 
-def get_data(sequence, vocab_size, mapping='m2m', sentence_length=40, step=3,
+def get_data(sequence, mapping='m2m', sentence_length=40, step=3,
              random_offset=True):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
@@ -58,7 +58,6 @@ def get_data(sequence, vocab_size, mapping='m2m', sentence_length=40, step=3,
         {np.array}, training target data y
     """
     X_sentences = []
-    y_sentences = []
     next_ids = []
 
     offset = np.random.randint(0, step) if random_offset else 0
@@ -71,38 +70,13 @@ def get_data(sequence, vocab_size, mapping='m2m', sentence_length=40, step=3,
             next_ids.append(sequence[i + sentence_length])
         elif mapping == 'm2m':
             # if mapping is many-to-many
-            y_sentences.append(sequence[i + 1 : i + sentence_length + 1])
+            next_ids.append(sequence[i + 1 : i + sentence_length + 1])
 
     # number of sampes
     nb_samples = len(X_sentences)
     # print "total # of sentences: %d" %nb_samples
 
-    # one-hot vector (all zeros except for a single one at
-    # the exact postion of this id number)
-    X_train = np.zeros((nb_samples, sentence_length, vocab_size), dtype=np.bool)
-    # expected outputs for each sentence
-    if mapping == 'o2o':
-        # if mapping is one-to-one
-        y_train = np.zeros((nb_samples, vocab_size), dtype=np.bool)
-    elif mapping == 'm2m':
-        # if mapping is many-to-many
-        y_train = np.zeros((nb_samples, sentence_length, vocab_size),
-                           dtype=np.bool)
-
-    for i, x_sentence in enumerate(X_sentences):
-        for t, id_ in enumerate(x_sentence):
-            # mark the each corresponding character in a sentence as 1
-            X_train[i, t, id_] = 1
-            # if mapping is many-to-many
-            if mapping == 'm2m':
-                y_train[i, t, y_sentences[i][t]] = 1
-        # if mapping is one-to-one
-        # mark the corresponding character in expected output as 1
-        if mapping == 'o2o':
-            y_train[i, next_ids[i]] = 1
-
-    return X_train, y_train
-
+    return np.asarray(X_sentences), np.asarray(next_ids)
 
 
 def main(mapping='o2o', sentence_length=40):
@@ -127,10 +101,10 @@ def main(mapping='o2o', sentence_length=40):
     print "Validation sequence length: %d" %len(val_sequence)
     print "#classes: %d\n" %input_len
 
-    X_train, y_train = get_data(train_sequence, input_len, mapping=mapping,
+    X_train, y_train = get_data(train_sequence, mapping=mapping,
                                 sentence_length=sentence_length, step=1,
                                 random_offset=False)
-    X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
+    X_val, y_val = get_data(val_sequence, mapping=mapping,
                             sentence_length=sentence_length, step=40,
                             random_offset=False)
 
