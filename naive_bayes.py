@@ -105,7 +105,7 @@ def get_data(sequence, vocab_size, mapping='m2m', sentence_length=40, step=3,
 
 
 
-def main(mapping='o2o', sentence_length=40, step=1):
+def main(mapping='o2o', sentence_length=40):
     """
     Train the model.
 
@@ -128,14 +128,15 @@ def main(mapping='o2o', sentence_length=40, step=1):
     print "#classes: %d\n" %input_len
 
     X_train, y_train = get_data(train_sequence, input_len, mapping=mapping,
-                                sentence_length=sentence_length, step=step,
+                                sentence_length=sentence_length, step=1,
                                 random_offset=False)
     X_val, y_val = get_data(val_sequence, input_len, mapping=mapping,
-                            sentence_length=sentence_length, step=step,
+                            sentence_length=sentence_length, step=40,
                             random_offset=False)
 
     clf = MultinomialNB(alpha=1.0)
     clf.fit(X_train, y_train)
+    print clf.predict(X_train[0:1])
 
 
 
