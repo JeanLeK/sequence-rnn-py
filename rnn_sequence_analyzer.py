@@ -446,7 +446,11 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
     # predicted probabilities for each id
     # we assume the first sentence_length ids are true
     prob = [1] * sentence_length + [0] * (length - sentence_length)
+    probs = [prob for _ in xrange(nb_options)]
+
+    # probability in negative log scale
     log_prob = [0] * length
+    log_probs = [log_prob for _ in xrange(nb_options)]
 
     # count the number of correct predictions
     nb_correct = 0
@@ -465,18 +469,22 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
                 seed[0, t, X[t]] = 1
 
             # get predictions, verbose = 0, no logging
-            predictions = analyzer.model.predict(seed, verbose=0)[0]
+            predictions = np.asarray(analyzer.model.predict(seed, verbose=0)[0])
 
             # y_predicted
             y_next_pred = []
             next_prob = 0
             if mapping == 'o2o':
                 # y_next_pred[np.argmax(predictions)] = True
+                # get the top-nb_options predictions with the high probability
                 y_next_pred = np.argsort(predictions)[-nb_options:][::-1]
+                # get the probability of the y_true
                 next_prob = predictions[y_next_true]
             elif mapping == 'm2m':
                 # y_next_pred[np.argmax(predictions[-1])] = True
+                # get the top-nb_options predictions with the high probability
                 y_next_pred = np.argsort(predictions[-1])[-nb_options:][::-1]
+                # get the probability of the y_true
                 next_prob = predictions[-1][y_next_true]
 
             # chech whether the y_true is in the top-predicted options
@@ -485,13 +493,14 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
                 nb_correct += 1
 
             prob[start_index + sentence_length] = next_prob
+            # get the negative log probability
             log_prob[start_index + sentence_length] = -log(next_prob)
 
             # print start_index, next_prob
     except KeyboardInterrupt:
         print "KeyboardInterrupt"
 
-    print "Accuracy: %.3f%%" %(nb_correct * 100.0 / (start_index + 1))
+    print "Accuracy: %.3f%%" %(nb_correct * 100.0 / (start_index + 1)) # pylint: disable=W0631
 
     print "    |-Plot figures ..."
     plot_and_write_prob(prob, "prob", [0, 50000, 0, 1], 'Normal')
