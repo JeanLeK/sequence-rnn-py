@@ -479,10 +479,11 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
                 y_next_pred = np.argsort(predictions[-1])[-nb_options:][::-1]
                 next_prob = predictions[-1][y_next_true]
 
-            next_prob = 1.0 if y_next_true in y_next_pred else next_prob
-            nb_correct = ((nb_correct + 1)
-                          if y_next_true in y_next_pred
-                          else nb_correct)
+            # chech whether the y_true is in the top-predicted options
+            if y_next_true in y_next_pred:
+                next_prob = 1.0
+                nb_correct += 1
+
             prob[start_index + sentence_length] = next_prob
             log_prob[start_index + sentence_length] = -log(next_prob)
 
