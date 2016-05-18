@@ -1,6 +1,5 @@
 """
-This program analyze the integer sequence using Multinomial Naive Bayes based
-on the python machine learning library sklearn.
+Simple Naive Bayes classifier implimentation for sequence prediction.
 
 Author: Chang Liu (fluency03)
 Data: 2016-05-12
@@ -10,6 +9,75 @@ Data: 2016-05-12
 import glob
 import numpy as np
 from sklearn.naive_bayes import MultinomialNB
+
+
+class NaiveBayes(object):
+    """
+    Simple Naive Bayes classifier implimentation for sequence prediction.
+    """
+    def __init__(self, window_size, nb_classes, alpha=1.0):
+        """
+        Initialization. Set up some parameters. Build up the matrix.
+        """
+        self.window_size = window_size
+        self.nb_classes = nb_classes
+        self.alpha = alpha
+        self.build(window_size, nb_classes)
+
+    def build(self, window_size, nb_classes):
+        """
+        Build up the matrix.
+        """
+        self.ny = np.zeros(nb_classes)
+        self.nxy = np.zeros((window_size, nb_classes, nb_classes))
+        self.py = np.zeros(self.nb_classes)
+
+    def train(self, X, y):
+        """
+        Train the model.
+        """
+        for i in xrange(len(y)):
+            self.ny[y[i]] += 1
+            for j in xrange(self.window_size):
+                self.nxy[j, X[i, j], y[i]] += 1
+
+        N = np.sum(self.ny)
+
+        # Prior
+        for i in xrange(N):
+            self.py[i] = ((self.ny[i] + self.alpha) /
+                          (N + self.alpha * self.nb_classes))
+
+    def evaluate(self, X, y):
+        """
+        Evaluate the model.
+        """
+        length = len(y)
+        correct = 0
+        pyx = np.zeros(self.nb_classes)
+
+        for i in xrange(length):
+            # Likelihood
+            pxy = np.zeros(self.window_size)
+            for j in xrange(self.window_size):
+                pxy[j] = ((self.nxy[j, X[i, j], y[i]] + self.alpha) /
+                          (self.ny[i] + self.alpha*self.nb_classes))
+            # Posterior
+            pyx[i] = self.py[i] * np.prod(pxy)
+            # check the prediction
+            if y[i] == np.argmax(pyx):
+                correct += 1
+
+        accuracy = (correct * 1.0) / length
+        print "Accuracy: %.3f%%" %accuracy
+
+
+    def predict(self, X):
+        """
+        Predict next sequence.
+        """
+        pass
+
 
 
 def get_sequence(filepath):
@@ -39,17 +107,13 @@ def get_sequence(filepath):
     return sequence, vocab_size
 
 
-def get_data(sequence, mapping='m2m', sentence_length=40, step=3,
-             random_offset=True):
+def get_data(sequence, sentence_length=40, step=3, random_offset=True):
     """
     Retrieves data from a plain txt file and formats it using one-hot vector.
 
     Arguments:
         sequence: {lsit}, the original input sequence
         vocab_size: {integer}, the number of unique id classes
-        mapping: {string}, input to output mapping.
-            'o2o': one-to-one
-            'm2m': many-to-many
         sentence_length: {integer}, the length of each training sentence.
         step: {integer}, the sample steps.
         random_offset: {bool}, the offset is random between step or is 0.
@@ -65,30 +129,22 @@ def get_data(sequence, mapping='m2m', sentence_length=40, step=3,
     # creat batch data and next sentences
     for i in range(offset, len(sequence) - sentence_length, step):
         X_sentences.append(sequence[i : i + sentence_length])
-        if mapping == 'o2o':
-            # if mapping is one-to-one
-            next_ids.append(sequence[i + sentence_length])
-        elif mapping == 'm2m':
-            # if mapping is many-to-many
-            next_ids.append(sequence[i + 1 : i + sentence_length + 1])
+        next_ids.append(sequence[i + sentence_length])
 
     # number of sampes
-    nb_samples = len(X_sentences)
+    # nb_samples = len(X_sentences)
     # print "total # of sentences: %d" %nb_samples
 
     return np.asarray(X_sentences), np.asarray(next_ids)
 
 
-def main(mapping='o2o', sentence_length=40):
+def main(sentence_length=40):
     """
     Train the model.
 
     Arguments:
         sentence_length: {integer}, the length of each training sentence.
         step: {integer}, the sample steps.
-        mapping: {string}, input to output mapping.
-            'o2o': one-to-one
-            'm2m': many-to-many
     """
     # get parameters and dimensions of the model
     print "Loading training data..."
@@ -101,12 +157,10 @@ def main(mapping='o2o', sentence_length=40):
     print "Validation sequence length: %d" %len(val_sequence)
     print "#classes: %d\n" %input_len
 
-    X_train, y_train = get_data(train_sequence, mapping=mapping,
-                                sentence_length=sentence_length, step=1,
-                                random_offset=False)
-    X_val, y_val = get_data(val_sequence, mapping=mapping,
-                            sentence_length=sentence_length, step=40,
-                            random_offset=False)
+    X_train, y_train = get_data(train_sequence, sentence_length=sentence_length,
+                                step=1, random_offset=False)
+    X_val, y_val = get_data(val_sequence, sentence_length=sentence_length,
+                            step=40, random_offset=False)
 
     clf = MultinomialNB(alpha=1.0)
     clf.fit(X_train, y_train)
