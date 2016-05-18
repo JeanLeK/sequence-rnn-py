@@ -47,7 +47,7 @@ class NaiveBayes(object):
 
         # print np.argmax(self.ny)
 
-        # Prior
+        # ------------------- Prior ------------------- #
         for i in xrange(N):
             self.py[y[i]] = ((self.ny[y[i]] + self.alpha) /
                              (N + self.alpha * self.nb_classes))
@@ -62,25 +62,24 @@ class NaiveBayes(object):
 
         for i in xrange(length):
             print "evaluating %d ..." %i
-            # Posterior
-            pyx = np.zeros(self.nb_classes)
-            # Likelihood
-            for j in xrange(self.nb_classes):
-                pxy = np.zeros(self.window_size)
+            # ------------------- Likelihood ------------------- #
+            pxy = np.zeros((self.nb_classes, self.window_size))
+            for p in xrange(self.nb_classes):
                 for k in xrange(self.window_size):
-                    pxy[k] = ((self.nxy[k, X[i, k], y[i]] + self.alpha) /
-                              (self.ny[y[i]] + self.alpha * self.nb_classes))
-                # print np.prod(pxy)
-                pyx[j] = self.py[j] * np.prod(pxy)
+                    pxy[p, k] = ((self.nxy[k, X[i, k], p] + self.alpha) /
+                                 (self.ny[p] + self.alpha * self.nb_classes))
+            # ------------------- Posterior ------------------- #
+            pyx = np.zeros(self.nb_classes)
+            for j in xrange(self.nb_classes):
+                pyx[j] = self.py[j] * np.prod(pxy[j])
 
             # normalization
-            pyx_sum = np.sum(pyx)
-            pyx = np.asarray([pyx[p]/pyx_sum for p in xrange(self.nb_classes)])
+            # pyx_sum = np.sum(pyx)
+            # pyx = np.asarray([pyx[p]/pyx_sum for p in xrange(self.nb_classes)])
 
             # check the prediction
             y_pred = np.argmax(pyx)
-            # print self.py[y_pred]
-            print "y_pred: %d , max_prod: %.2f%%, y_true_prob: %.2f%% ," %(y_pred, max(pyx)*100.0, pyx[y[i]]*100.0)
+            print "y_pred: %d , max_prod: %.3f%%, y_true_prob: %.3f%% ," %(y_pred, max(pyx)*100.0, pyx[y[i]]*100.0)
             if y[i] == y_pred:
                 correct += 1
 
@@ -155,7 +154,7 @@ def get_data(sequence, sentence_length=40, step=3, random_offset=True):
     return np.asarray(X_sentences), np.asarray(next_ids)
 
 
-def main(sentence_length=40):
+def main(sentence_length=3):
     """
     Train the model.
 
@@ -165,9 +164,9 @@ def main(sentence_length=40):
     """
     # get parameters and dimensions of the model
     print "Loading training data..."
-    train_sequence, input_len1 = get_sequence("./test_data")
+    train_sequence, input_len1 = get_sequence("./data")
     print "Loading validation data..."
-    val_sequence, input_len2 = get_sequence("./test_data")
+    val_sequence, input_len2 = get_sequence("./data")
     input_len = max(input_len1, input_len2)
 
     print "Training sequence length: %d" %len(train_sequence)
@@ -177,7 +176,7 @@ def main(sentence_length=40):
     X_train, y_train = get_data(train_sequence, sentence_length=sentence_length,
                                 step=1, random_offset=False)
     X_val, y_val = get_data(val_sequence, sentence_length=sentence_length,
-                            step=40, random_offset=False)
+                            step=1, random_offset=False)
 
     start_time = time.time()
 
