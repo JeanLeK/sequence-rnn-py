@@ -79,7 +79,8 @@ class NaiveBayes(object):
 
             # check the prediction
             y_pred = np.argmax(pyx)
-            print "y_pred: %d , max_prod: %.3f%%, y_true_prob: %.3f%% ," %(y_pred, max(pyx)*100.0, pyx[y[i]]*100.0)
+            print ("y_pred: %d , max_prod: %.3f%%, y_true_prob: %.3f%% ,"
+                   %(y_pred, max(pyx)*100.0, pyx[y[i]]*100.0))
             if y[i] == y_pred:
                 correct += 1
 
