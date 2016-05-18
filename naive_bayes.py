@@ -7,8 +7,9 @@ Data: 2016-05-12
 
 
 import glob
+import time
+from math import log
 import numpy as np
-from sklearn.naive_bayes import MultinomialNB
 
 
 class NaiveBayes(object):
@@ -22,55 +23,71 @@ class NaiveBayes(object):
         self.window_size = window_size
         self.nb_classes = nb_classes
         self.alpha = alpha
-        self.build(window_size, nb_classes)
+        self.build()
 
-    def build(self, window_size, nb_classes):
+    def build(self):
         """
         Build up the matrix.
         """
-        self.ny = np.zeros(nb_classes)
-        self.nxy = np.zeros((window_size, nb_classes, nb_classes))
+        self.ny = np.zeros((self.nb_classes,), dtype=np.int)
+        self.nxy = np.zeros((self.window_size,
+                             self.nb_classes,
+                             self.nb_classes), dtype=np.int)
         self.py = np.zeros(self.nb_classes)
 
     def train(self, X, y):
         """
         Train the model.
         """
-        for i in xrange(len(y)):
+        N = len(y)
+        for i in xrange(N):
             self.ny[y[i]] += 1
             for j in xrange(self.window_size):
                 self.nxy[j, X[i, j], y[i]] += 1
 
-        N = np.sum(self.ny)
+        # print np.argmax(self.ny)
 
         # Prior
         for i in xrange(N):
-            self.py[i] = ((self.ny[i] + self.alpha) /
-                          (N + self.alpha * self.nb_classes))
+            self.py[y[i]] = ((self.ny[y[i]] + self.alpha) /
+                             (N + self.alpha * self.nb_classes))
 
     def evaluate(self, X, y):
         """
         Evaluate the model.
         """
         length = len(y)
+        print "length: %d " %length
         correct = 0
-        pyx = np.zeros(self.nb_classes)
 
         for i in xrange(length):
-            # Likelihood
-            pxy = np.zeros(self.window_size)
-            for j in xrange(self.window_size):
-                pxy[j] = ((self.nxy[j, X[i, j], y[i]] + self.alpha) /
-                          (self.ny[i] + self.alpha*self.nb_classes))
+            print "evaluating %d ..." %i
             # Posterior
-            pyx[i] = self.py[i] * np.prod(pxy)
+            pyx = np.zeros(self.nb_classes)
+            # Likelihood
+            for j in xrange(self.nb_classes):
+                pxy = np.zeros(self.window_size)
+                for k in xrange(self.window_size):
+                    pxy[k] = ((self.nxy[k, X[i, k], y[i]] + self.alpha) /
+                              (self.ny[y[i]] + self.alpha * self.nb_classes))
+                # print np.prod(pxy)
+                pyx[j] = self.py[j] * np.prod(pxy)
+
+            # normalization
+            pyx_sum = np.sum(pyx)
+            pyx = np.asarray([pyx[p]/pyx_sum for p in xrange(self.nb_classes)])
+
             # check the prediction
-            if y[i] == np.argmax(pyx):
+            y_pred = np.argmax(pyx)
+            # print self.py[y_pred]
+            print "y_pred: %d , max_prod: %.2f%%, y_true_prob: %.2f%% ," %(y_pred, max(pyx)*100.0, pyx[y[i]]*100.0)
+            if y[i] == y_pred:
                 correct += 1
 
-        accuracy = (correct * 1.0) / length
+        accuracy = (correct * 100.0) / length
         print "Accuracy: %.3f%%" %accuracy
 
+        return accuracy
 
     def predict(self, X):
         """
@@ -148,9 +165,9 @@ def main(sentence_length=40):
     """
     # get parameters and dimensions of the model
     print "Loading training data..."
-    train_sequence, input_len1 = get_sequence("./train_data/*")
+    train_sequence, input_len1 = get_sequence("./test_data")
     print "Loading validation data..."
-    val_sequence, input_len2 = get_sequence("./validation_data/*")
+    val_sequence, input_len2 = get_sequence("./test_data")
     input_len = max(input_len1, input_len2)
 
     print "Training sequence length: %d" %len(train_sequence)
@@ -162,11 +179,21 @@ def main(sentence_length=40):
     X_val, y_val = get_data(val_sequence, sentence_length=sentence_length,
                             step=40, random_offset=False)
 
-    clf = MultinomialNB(alpha=1.0)
-    clf.fit(X_train, y_train)
-    print clf.predict(X_train[0:1])
+    start_time = time.time()
 
+    nb = NaiveBayes(window_size=sentence_length,
+                    nb_classes=input_len,
+                    alpha=1.0/input_len)
 
+    print "Train the model...\n"
+    nb.train(X_train, y_train)
+
+    print "Evaluate the model...\n"
+    nb.evaluate(X_val, y_val)
+
+    stop_time = time.time()
+    print "Stop...\n"
+    print "--- %s seconds ---\n" % (stop_time - start_time)
 
 if __name__ == '__main__':
     main()
