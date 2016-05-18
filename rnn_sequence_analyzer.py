@@ -446,14 +446,14 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
     # predicted probabilities for each id
     # we assume the first sentence_length ids are true
     prob = [1] * sentence_length + [0] * (length - sentence_length)
-    probs = [prob for _ in xrange(nb_options)]
+    probs = [prob for _ in xrange(nb_options+1)]
 
     # probability in negative log scale
     log_prob = [0] * length
-    log_probs = [log_prob for _ in xrange(nb_options)]
+    log_probs = [log_prob for _ in xrange(nb_options+1)]
 
     # count the number of correct predictions
-    nb_correct = 0
+    nb_correct = [0] * (nb_options+1)
 
     start_time = time.time()
     try:
@@ -473,38 +473,58 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
 
             # y_predicted
             y_next_pred = []
-            next_prob = 0
+            next_probs = [0] * (nb_options+1)
+            # next_prob = 0
             if mapping == 'o2o':
                 # y_next_pred[np.argmax(predictions)] = True
                 # get the top-nb_options predictions with the high probability
                 y_next_pred = np.argsort(predictions)[-nb_options:][::-1]
                 # get the probability of the y_true
-                next_prob = predictions[y_next_true]
+                next_probs[0] = predictions[y_next_true]
             elif mapping == 'm2m':
                 # y_next_pred[np.argmax(predictions[-1])] = True
                 # get the top-nb_options predictions with the high probability
                 y_next_pred = np.argsort(predictions[-1])[-nb_options:][::-1]
                 # get the probability of the y_true
-                next_prob = predictions[-1][y_next_true]
+                next_probs[0] = predictions[-1][y_next_true]
 
             # chech whether the y_true is in the top-predicted options
-            if y_next_true in y_next_pred:
-                next_prob = 1.0
-                nb_correct += 1
+            if y_next_true == y_next_pred[0]:
+                next_probs[1] = 1.0
+                nb_correct[1] += 1
+            elif y_next_true == y_next_pred[1]:
+                next_probs[2] = 1.0
+                nb_correct[2] += 1
+            elif y_next_true == y_next_pred[2]:
+                next_probs[3] = 1.0
+                nb_correct[3] += 1
 
-            prob[start_index + sentence_length] = next_prob
-            # get the negative log probability
-            log_prob[start_index + sentence_length] = -log(next_prob)
+            next_probs = np.maximum.accumulate(next_probs)
+            nb_correct = np.maximum.accumulate(nb_correct)
 
-            # print start_index, next_prob
+            for o in xrange(nb_options+1):
+                probs[o][start_index + sentence_length] = next_probs[o]
+                # get the negative log probability
+                log_probs[o][start_index + sentence_length] = -log(next_probs[o])
+
+            print start_index, next_probs
     except KeyboardInterrupt:
         print "KeyboardInterrupt"
 
-    print "Accuracy: %.3f%%" %(nb_correct * 100.0 / (start_index + 1)) # pylint: disable=W0631
+    for o in xrange(nb_options+1):
+        print "Accuracy %d: %.3f%%" %(o, (nb_correct[o] * 100.0 /
+                                          (start_index + 1))) # pylint: disable=W0631
 
     print "    |-Plot figures ..."
-    plot_and_write_prob(prob, "prob", [0, 50000, 0, 1], 'Normal')
-    plot_and_write_prob(log_prob, "log_prob", [0, 50000, 0, 25], 'Log')
+    for o in xrange(nb_options+1):
+        plot_and_write_prob(probs[o],
+                            "prob-"+str(o),
+                            [0, 50000, 0, 1],
+                            'Normal')
+        plot_and_write_prob(log_probs[o],
+                            "log_prob-"+str(o),
+                            [0, 50000, 0, 25],
+                            'Log')
 
     stop_time = time.time()
     print "--- %s seconds ---\n" % (stop_time - start_time)
@@ -624,7 +644,7 @@ def run(hidden_len=512, batch_size=128, nb_epoch=50, nb_iterations=5,
     elif mode == 'detect':
         print "Detect..."
         detect(val_sequence, input_len, rnn, mapping=mapping,
-               sentence_length=sentence_length, nb_options=1)
+               sentence_length=sentence_length, nb_options=3)
     else:
         print "The mode = %s is not correct!!!" %mode
 
