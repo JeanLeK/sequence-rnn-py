@@ -445,12 +445,14 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
 
     # predicted probabilities for each id
     # we assume the first sentence_length ids are true
-    prob = [1.0] * sentence_length + [0.0] * (length - sentence_length)
-    probs = np.asarray([prob for _ in xrange(nb_options+1)])
+    # prob = [1.0] * sentence_length + [0.0] * (length - sentence_length)
+    # probs = np.asarray([prob for _ in xrange(nb_options+1)])
+    probs = np.zeros((nb_options+1, length))
+    for o in xrange(nb_options+1):
+        probs[o][:sentence_length] = 1.0
 
     # probability in negative log scale
-    log_prob = [0.0] * length
-    log_probs = np.asarray([log_prob for _ in xrange(nb_options+1)])
+    log_probs = np.zeros((nb_options+1, length))
 
     # count the number of correct predictions
     nb_correct = [0] * (nb_options+1)
