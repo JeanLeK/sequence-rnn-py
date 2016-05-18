@@ -445,12 +445,12 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
 
     # predicted probabilities for each id
     # we assume the first sentence_length ids are true
-    prob = [1] * sentence_length + [0] * (length - sentence_length)
-    probs = [prob for _ in xrange(nb_options+1)]
+    prob = [1.0] * sentence_length + [0.0] * (length - sentence_length)
+    probs = np.asarray([prob for _ in xrange(nb_options+1)])
 
     # probability in negative log scale
-    log_prob = [0] * length
-    log_probs = [log_prob for _ in xrange(nb_options+1)]
+    log_prob = [0.0] * length
+    log_probs = np.asarray([log_prob for _ in xrange(nb_options+1)])
 
     # count the number of correct predictions
     nb_correct = [0] * (nb_options+1)
@@ -473,8 +473,7 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
 
             # y_predicted
             y_next_pred = []
-            next_probs = [0] * (nb_options+1)
-            # next_prob = 0
+            next_probs = [0.0] * (nb_options+1)
             if mapping == 'o2o':
                 # y_next_pred[np.argmax(predictions)] = True
                 # get the top-nb_options predictions with the high probability
@@ -489,40 +488,36 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
                 next_probs[0] = predictions[-1][y_next_true]
 
             # chech whether the y_true is in the top-predicted options
-            if y_next_true == y_next_pred[0]:
-                next_probs[1] = 1.0
-                nb_correct[1] += 1
-            elif y_next_true == y_next_pred[1]:
-                next_probs[2] = 1.0
-                nb_correct[2] += 1
-            elif y_next_true == y_next_pred[2]:
-                next_probs[3] = 1.0
-                nb_correct[3] += 1
+            for i in xrange(nb_options):
+                if y_next_true == y_next_pred[i]:
+                    next_probs[i+1] = 1.0
+                    nb_correct[i+1] += 1
 
             next_probs = np.maximum.accumulate(next_probs)
-            nb_correct = np.maximum.accumulate(nb_correct)
 
-            for o in xrange(nb_options+1):
-                probs[o][start_index + sentence_length] = next_probs[o]
+            for j in xrange(nb_options+1):
+                probs[j, start_index + sentence_length] = next_probs[j]
                 # get the negative log probability
-                log_probs[o][start_index + sentence_length] = -log(next_probs[o])
+                log_probs[j, start_index + sentence_length] = -log(next_probs[j])
 
             print start_index, next_probs
+
     except KeyboardInterrupt:
         print "KeyboardInterrupt"
 
-    for o in xrange(nb_options+1):
-        print "Accuracy %d: %.3f%%" %(o, (nb_correct[o] * 100.0 /
+    nb_correct = np.add.accumulate(nb_correct)
+    for p in xrange(nb_options+1):
+        print "Accuracy %d: %.4f%%" %(p, (nb_correct[p] * 100.0 /
                                           (start_index + 1))) # pylint: disable=W0631
 
     print "    |-Plot figures ..."
-    for o in xrange(nb_options+1):
-        plot_and_write_prob(probs[o],
-                            "prob-"+str(o),
+    for q in xrange(nb_options+1):
+        plot_and_write_prob(probs[q],
+                            "prob_"+str(q),
                             [0, 50000, 0, 1],
                             'Normal')
-        plot_and_write_prob(log_probs[o],
-                            "log_prob-"+str(o),
+        plot_and_write_prob(log_probs[q],
+                            "log_prob_"+str(q),
                             [0, 50000, 0, 25],
                             'Log')
 
