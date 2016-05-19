@@ -10,6 +10,7 @@ import glob
 import time
 from math import log
 import numpy as np
+from rnn_sequence_analyzer import plot_hist, plot_and_write_prob
 
 
 class NaiveBayes(object):
@@ -85,9 +86,13 @@ class NaiveBayes(object):
             Normalize the probabilities.
             """
             if log_scale:
-                pass
+                py_x_sum = log(np.sum(np.exp(py_x)))
+                return np.asarray([py_x[p] - py_x_sum
+                                   for p in xrange(self.nb_classes)])
             else:
-                pass
+                py_x_sum = np.sum(py_x)
+                return np.asarray([py_x[p] / py_x_sum
+                                   for p in xrange(self.nb_classes)])
 
         N = np.sum(self.ny)
         length = len(y)
@@ -116,16 +121,14 @@ class NaiveBayes(object):
                 py_x[j] = joint(py[j], px_y[j])
 
             # ------------------- Normalization ------------------- #
-            if normalization and not log_scale:
-                py_x_sum = np.sum(py_x)
-                py_x = np.asarray([py_x[p] / py_x_sum
-                                   for p in xrange(self.nb_classes)])
+            if normalization:
+                py_x = normalize(py_x)
 
             # ------------------- Prediction ------------------- #
             # check the prediction
             y_pred = np.argmax(py_x)
-            print ("y_pred: %d , max_prod: %.3f%%, y_true_prob: %.3f%% ,"
-                   %(y_pred, max(py_x)*100.0, py_x[y[i]]*100.0))
+            print ("y_pred: %d , max_prod: %.8f, y_true_prob: %.8f ,"
+                   %(y_pred, max(py_x), py_x[y[i]]))
             if y[i] == y_pred:
                 correct += 1
 
