@@ -19,6 +19,16 @@ class NaiveBayes(object):
     def __init__(self, window_size, nb_classes, alpha=1.0):
         """
         Initialization. Set up some parameters. Build up the matrix.
+
+        Arguments:
+            window_size: {integer}, the size of input window.
+            nb_classes: {integer}, number of uniques classes.
+            alpha: {float}, the smoothing priors alpha >= 0 accounts for
+                features not present in the learning samples and prevents zero
+                probabilities in further computations. Setting alpha = 1 is
+                called Laplace smoothing, while alpha < 1 is called
+                Lidstone smoothing.
+
         """
         self.window_size = window_size
         self.nb_classes = nb_classes
@@ -37,6 +47,10 @@ class NaiveBayes(object):
     def train(self, X, y):
         """
         Train the model.
+
+        Arguments:
+            X: {array}, X training data.
+            y: {array}, y training data.
         """
         N = len(y)
         for i in xrange(N):
@@ -44,9 +58,15 @@ class NaiveBayes(object):
             for j in xrange(self.window_size):
                 self.nx_y[j, X[i, j], y[i]] += 1
 
-    def evaluate(self, X, y):
+    def evaluate(self, X, y, normalization=False, log_scale=False):
         """
         Evaluate the model.
+
+        Arguments:
+            X: {array}, X evaluation data.
+            y: {array}, y evaluation data.
+            normalization: {bool}, whether do the normalization.
+            log_scale: {bool}, whether transfer probabilities on log scale.
         """
         N = np.sum(self.ny)
         length = len(y)
@@ -73,8 +93,10 @@ class NaiveBayes(object):
                 py_x[j] = py[j] * np.prod(px_y[j])
 
             # ------------------- Normalization ------------------- #
-            # pyx_sum = np.sum(pyx)
-            # pyx = np.asarray([pyx[p]/pyx_sum for p in xrange(self.nb_classes)])
+            if normalization:
+                py_x_sum = np.sum(py_x)
+                py_x = np.asarray([py_x[p] / py_x_sum
+                                   for p in xrange(self.nb_classes)])
 
             # ------------------- Prediction ------------------- #
             # check the prediction
@@ -106,6 +128,7 @@ def get_sequence(filepath):
     Returns:
         {list}, the log sequence.
         {integer}, the size of vocabulary.
+        {integer}, total length of the sequences.
     """
     # read file and convert ids of each line into array of numbers
     seqfiles = glob.glob(filepath)
@@ -165,7 +188,6 @@ def main(sentence_length=3):
 
     Arguments:
         sentence_length: {integer}, the length of each training sentence.
-        step: {integer}, the sample steps.
     """
     # get parameters and dimensions of the model
     print "Loading training data..."
@@ -196,7 +218,7 @@ def main(sentence_length=3):
     for sequence in val_sequence:
         X_val, y_val = get_data(sequence, sentence_length=sentence_length,
                                 step=1, random_offset=False)
-        nb.evaluate(X_val, y_val)
+        nb.evaluate(X_val, y_val, normalization=False)
 
     stop_time = time.time()
     print "Stop...\n"
