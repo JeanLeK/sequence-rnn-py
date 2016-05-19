@@ -526,7 +526,7 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
     stop_time = time.time()
     print "--- %s seconds ---\n" % (stop_time - start_time)
 
-    return prob
+    return probs
 
 
 def plot_hist(prob, filename, plot_range, scale, cumulative, normed=True):
