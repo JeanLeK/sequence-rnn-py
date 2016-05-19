@@ -30,10 +30,9 @@ class NaiveBayes(object):
         Build up the matrix.
         """
         self.ny = np.zeros((self.nb_classes,), dtype=np.int)
-        self.nxy = np.zeros((self.window_size,
-                             self.nb_classes,
-                             self.nb_classes), dtype=np.int)
-        self.py = np.zeros(self.nb_classes)
+        self.nx_y = np.zeros((self.window_size,
+                              self.nb_classes,
+                              self.nb_classes), dtype=np.int)
 
     def train(self, X, y):
         """
@@ -43,44 +42,45 @@ class NaiveBayes(object):
         for i in xrange(N):
             self.ny[y[i]] += 1
             for j in xrange(self.window_size):
-                self.nxy[j, X[i, j], y[i]] += 1
-
-        # print np.argmax(self.ny)
-
-        # ------------------- Prior ------------------- #
-        for i in xrange(N):
-            self.py[y[i]] = ((self.ny[y[i]] + self.alpha) /
-                             (N + self.alpha * self.nb_classes))
+                self.nx_y[j, X[i, j], y[i]] += 1
 
     def evaluate(self, X, y):
         """
         Evaluate the model.
         """
+        N = np.sum(self.ny)
         length = len(y)
         print "length: %d " %length
         correct = 0
 
+        # ------------------- Prior ------------------- #
+        py = np.zeros(self.nb_classes)
+        for i in xrange(N):
+            py[y[i]] = ((self.ny[y[i]] + self.alpha) /
+                        (N + self.alpha * self.nb_classes))
+
         for i in xrange(length):
             print "evaluating %d ..." %i
             # ------------------- Likelihood ------------------- #
-            pxy = np.zeros((self.nb_classes, self.window_size))
+            px_y = np.zeros((self.nb_classes, self.window_size))
             for p in xrange(self.nb_classes):
                 for k in xrange(self.window_size):
-                    pxy[p, k] = ((self.nxy[k, X[i, k], p] + self.alpha) /
-                                 (self.ny[p] + self.alpha * self.nb_classes))
+                    px_y[p, k] = ((self.nx_y[k, X[i, k], p] + self.alpha) /
+                                  (self.ny[p] + self.alpha * self.nb_classes))
             # ------------------- Posterior ------------------- #
-            pyx = np.zeros(self.nb_classes)
+            py_x = np.zeros(self.nb_classes)
             for j in xrange(self.nb_classes):
-                pyx[j] = self.py[j] * np.prod(pxy[j])
+                py_x[j] = py[j] * np.prod(px_y[j])
 
-            # normalization
+            # ------------------- Normalization ------------------- #
             # pyx_sum = np.sum(pyx)
             # pyx = np.asarray([pyx[p]/pyx_sum for p in xrange(self.nb_classes)])
 
+            # ------------------- Prediction ------------------- #
             # check the prediction
-            y_pred = np.argmax(pyx)
+            y_pred = np.argmax(py_x)
             print ("y_pred: %d , max_prod: %.3f%%, y_true_prob: %.3f%% ,"
-                   %(y_pred, max(pyx)*100.0, pyx[y[i]]*100.0))
+                   %(y_pred, max(py_x)*100.0, py_x[y[i]]*100.0))
             if y[i] == y_pred:
                 correct += 1
 
@@ -109,19 +109,23 @@ def get_sequence(filepath):
     """
     # read file and convert ids of each line into array of numbers
     seqfiles = glob.glob(filepath)
-    sequence = []
+    sequences = []
+    total_length = 0
 
     for seqfile in seqfiles:
+        sequence = []
         with open(seqfile, 'r') as f:
             one_sequence = [int(id_) for id_ in f]
             print "        %s, sequence length: %d" %(seqfile,
                                                       len(one_sequence))
             sequence.extend(one_sequence)
+            total_length += len(one_sequence)
+        sequences.append(sequence)
 
     # add two extra positions for 'unknown-log' and 'no-log'
-    vocab_size = max(sequence) + 2
+    vocab_size = np.amax(sequences) + 2
 
-    return sequence, vocab_size
+    return sequences, vocab_size, total_length
 
 
 def get_data(sequence, sentence_length=40, step=3, random_offset=True):
@@ -165,19 +169,16 @@ def main(sentence_length=3):
     """
     # get parameters and dimensions of the model
     print "Loading training data..."
-    train_sequence, input_len1 = get_sequence("./data")
+    train_sequence, input_len1, total_length1 = get_sequence("./train_data/*")
+
     print "Loading validation data..."
-    val_sequence, input_len2 = get_sequence("./data")
+    val_sequence, input_len2, total_length2 = get_sequence("./train_data/*")
+
     input_len = max(input_len1, input_len2)
 
-    print "Training sequence length: %d" %len(train_sequence)
-    print "Validation sequence length: %d" %len(val_sequence)
+    print "Training sequence length: %d" %total_length1
+    print "Validation sequence length: %d" %total_length2
     print "#classes: %d\n" %input_len
-
-    X_train, y_train = get_data(train_sequence, sentence_length=sentence_length,
-                                step=1, random_offset=False)
-    X_val, y_val = get_data(val_sequence, sentence_length=sentence_length,
-                            step=1, random_offset=False)
 
     start_time = time.time()
 
@@ -186,10 +187,16 @@ def main(sentence_length=3):
                     alpha=1.0/input_len)
 
     print "Train the model...\n"
-    nb.train(X_train, y_train)
+    for sequence in train_sequence:
+        X_train, y_train = get_data(sequence, sentence_length=sentence_length,
+                                    step=1, random_offset=False)
+        nb.train(X_train, y_train)
 
     print "Evaluate the model...\n"
-    nb.evaluate(X_val, y_val)
+    for sequence in val_sequence:
+        X_val, y_val = get_data(sequence, sentence_length=sentence_length,
+                                step=1, random_offset=False)
+        nb.evaluate(X_val, y_val)
 
     stop_time = time.time()
     print "Stop...\n"
