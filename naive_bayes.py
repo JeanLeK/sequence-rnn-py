@@ -58,7 +58,7 @@ class NaiveBayes(object):
             for j in xrange(self.window_size):
                 self.nx_y[j, X[i, j], y[i]] += 1
 
-    def evaluate(self, X, y, normalization=False, log_scale=False):
+    def evaluate(self, X, y, normalization=True, log_scale=False):
         """
         Evaluate the model.
 
@@ -68,6 +68,27 @@ class NaiveBayes(object):
             normalization: {bool}, whether do the normalization.
             log_scale: {bool}, whether transfer probabilities on log scale.
         """
+        def scale(p):
+            """
+            Probability in log scale.
+            """
+            return log(p) if log_scale else p
+
+        def joint(py, px_y):
+            """
+            Joint probability in log scale.
+            """
+            return (py + np.sum(px_y)) if log_scale else (py * np.prod(px_y))
+
+        def normalize(py_x):
+            """
+            Normalize the probabilities.
+            """
+            if log_scale:
+                pass
+            else:
+                pass
+
         N = np.sum(self.ny)
         length = len(y)
         print "length: %d " %length
@@ -76,8 +97,8 @@ class NaiveBayes(object):
         # ------------------- Prior ------------------- #
         py = np.zeros(self.nb_classes)
         for i in xrange(N):
-            py[y[i]] = ((self.ny[y[i]] + self.alpha) /
-                        (N + self.alpha * self.nb_classes))
+            py[y[i]] = scale((self.ny[y[i]] + self.alpha) /
+                             (N + self.alpha * self.nb_classes))
 
         for i in xrange(length):
             print "evaluating %d ..." %i
@@ -85,15 +106,17 @@ class NaiveBayes(object):
             px_y = np.zeros((self.nb_classes, self.window_size))
             for p in xrange(self.nb_classes):
                 for k in xrange(self.window_size):
-                    px_y[p, k] = ((self.nx_y[k, X[i, k], p] + self.alpha) /
-                                  (self.ny[p] + self.alpha * self.nb_classes))
+                    px_y[p, k] = scale((self.nx_y[k, X[i, k], p] +
+                                        self.alpha) /
+                                       (self.ny[p] +
+                                        self.alpha * self.nb_classes))
             # ------------------- Posterior ------------------- #
             py_x = np.zeros(self.nb_classes)
             for j in xrange(self.nb_classes):
-                py_x[j] = py[j] * np.prod(px_y[j])
+                py_x[j] = joint(py[j], px_y[j])
 
             # ------------------- Normalization ------------------- #
-            if normalization:
+            if normalization and not log_scale:
                 py_x_sum = np.sum(py_x)
                 py_x = np.asarray([py_x[p] / py_x_sum
                                    for p in xrange(self.nb_classes)])
@@ -218,7 +241,7 @@ def main(sentence_length=3):
     for sequence in val_sequence:
         X_val, y_val = get_data(sequence, sentence_length=sentence_length,
                                 step=1, random_offset=False)
-        nb.evaluate(X_val, y_val, normalization=False)
+        nb.evaluate(X_val, y_val, normalization=True, log_scale=False)
 
     stop_time = time.time()
     print "Stop...\n"
