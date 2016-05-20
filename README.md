@@ -53,6 +53,10 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 ![ BRNN LSTM ](https://github.com/fluency03/sequence-rnn-py/blob/master/brnn_model.png "BRNN LSTM")
 
 
+- Naive Bayes model:
+
+[naive_bayes.py](https://github.com/fluency03/sequence-rnn-py/blob/master/naive_bayes.py)
+
 ## Data
 
 - Training Set
