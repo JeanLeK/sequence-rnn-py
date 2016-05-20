@@ -127,10 +127,14 @@ class NaiveBayes(object):
         print "length: %d " %length
         correct = 0
 
+        probs = np.zeros(length)
+        if not log_scale:
+            probs[:self.window_size] = 1.0
+
         # ------------------- Prior ------------------- #
         py = np.zeros(self.nb_classes)
-        for i in xrange(N):
-            py[y[i]] = scale((self.ny[y[i]] + self.alpha) /
+        for i in xrange(self.nb_classes):
+            py[i] = scale((self.ny[i] + self.alpha) /
                              (N + self.alpha * self.nb_classes))
 
         for i in xrange(length):
@@ -163,6 +167,12 @@ class NaiveBayes(object):
         accuracy = (correct * 100.0) / length
         print "Accuracy: %.3f%%" %accuracy
 
+        print "    |-Plot figures ..."
+        plot_and_write_prob(probs,
+                            "nb_prob_",
+                            [0, 50000, 0, 1],
+                            'Log' if log_scale else 'Normal')
+
         return accuracy
 
     def predict(self, X):
@@ -188,6 +198,7 @@ def get_sequence(filepath):
     seqfiles = glob.glob(filepath)
     sequences = []
     total_length = 0
+    max_value = 0
 
     for seqfile in seqfiles:
         sequence = []
@@ -197,10 +208,12 @@ def get_sequence(filepath):
                                                       len(one_sequence))
             sequence.extend(one_sequence)
             total_length += len(one_sequence)
+        max_new = np.amax(sequence)
+        max_value = max_new if max_new > max_value else max_value
         sequences.append(sequence)
 
     # add two extra positions for 'unknown-log' and 'no-log'
-    vocab_size = np.amax(sequences) + 2
+    vocab_size = max_value + 2
 
     return sequences, vocab_size, total_length
 
@@ -248,7 +261,7 @@ def main(sentence_length=3, mode='train'):
     train_sequence, input_len1, total_length1 = get_sequence("./train_data/*")
 
     print "Loading validation data..."
-    val_sequence, input_len2, total_length2 = get_sequence("./train_data/*")
+    val_sequence, input_len2, total_length2 = get_sequence("./validation_data/*")
 
     input_len = max(input_len1, input_len2)
 
