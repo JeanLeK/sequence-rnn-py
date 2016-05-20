@@ -148,15 +148,19 @@ class NaiveBayes(object):
             # ------------------- Prediction ------------------- #
             # check the prediction
             y_pred = np.argmax(py_x)
+            y_true = y[i]
+
             max_prob = scale(py_x[y_pred])
-            probs[i + self.window_size] = max_prob
             print ("y_pred: %d , max_prod: %.8f, y_true_prob: %.8f ,"
-                   %(y_pred, max_prob, scale(py_x[y[i]])))
-            if y[i] == y_pred:
+                   %(y_pred, max_prob, scale(py_x[y_true])))
+
+            if y_true == y_pred:
                 correct += 1
 
+            probs[i + self.window_size] = max_prob
+
         accuracy = (correct * 100.0) / length
-        print "Accuracy: %.3f%%" %accuracy
+        print "Accuracy: %.4f%%" %accuracy
 
         print "    |-Plot figures ..."
         plot_and_write_prob(probs,

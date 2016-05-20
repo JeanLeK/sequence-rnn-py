@@ -489,6 +489,7 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
                 # get the probability of the y_true
                 next_probs[0] = predictions[-1][y_next_true]
 
+            print y_next_pred, y_next_true
             # chech whether the y_true is in the top-predicted options
             for i in xrange(nb_options):
                 if y_next_true == y_next_pred[i]:
@@ -496,6 +497,7 @@ def detect(sequence, input_len, analyzer, mapping='m2m', sentence_length=40,
                     nb_correct[i+1] += 1
 
             next_probs = np.maximum.accumulate(next_probs)
+            print next_probs
 
             for j in xrange(nb_options+1):
                 probs[j, start_index + sentence_length] = next_probs[j]
