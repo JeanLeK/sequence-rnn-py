@@ -103,24 +103,13 @@ class NaiveBayes(object):
             """
             return log(p) if log_scale else p
 
-        def joint(py, px_y):
-            """
-            Joint probability in log scale.
-            """
-            return (py + np.sum(px_y)) if log_scale else (py * np.prod(px_y))
-
         def normalize(py_x):
             """
             Normalize the probabilities.
             """
-            if log_scale:
-                py_x_sum = log(np.sum(np.exp(py_x)))
-                return np.asarray([py_x[p] - py_x_sum
-                                   for p in xrange(self.nb_classes)])
-            else:
-                py_x_sum = np.sum(py_x)
-                return np.asarray([py_x[p] / py_x_sum
-                                   for p in xrange(self.nb_classes)])
+            py_x_sum = np.sum(py_x)
+            return np.asarray([py_x[p] / py_x_sum
+                               for p in xrange(self.nb_classes)])
 
         N = np.sum(self.ny)
         length = len(y)
@@ -134,8 +123,8 @@ class NaiveBayes(object):
         # ------------------- Prior ------------------- #
         py = np.zeros(self.nb_classes)
         for i in xrange(self.nb_classes):
-            py[i] = scale((self.ny[i] + self.alpha) /
-                             (N + self.alpha * self.nb_classes))
+            py[i] = ((self.ny[i] + self.alpha) /
+                     (N + self.alpha * self.nb_classes))
 
         for i in xrange(length):
             print "evaluating %d ..." %i
@@ -143,14 +132,14 @@ class NaiveBayes(object):
             px_y = np.zeros((self.nb_classes, self.window_size))
             for p in xrange(self.nb_classes):
                 for k in xrange(self.window_size):
-                    px_y[p, k] = scale((self.nx_y[k, X[i, k], p] +
-                                        self.alpha) /
-                                       (self.ny[p] +
-                                        self.alpha * self.nb_classes))
+                    px_y[p, k] = ((self.nx_y[k, X[i, k], p] +
+                                   self.alpha) /
+                                  (self.ny[p] +
+                                   self.alpha * self.nb_classes))
             # ------------------- Posterior ------------------- #
             py_x = np.zeros(self.nb_classes)
             for j in xrange(self.nb_classes):
-                py_x[j] = joint(py[j], px_y[j])
+                py_x[j] = py[j] * np.prod(px_y[j])
 
             # ------------------- Normalization ------------------- #
             if normalization:
@@ -159,8 +148,10 @@ class NaiveBayes(object):
             # ------------------- Prediction ------------------- #
             # check the prediction
             y_pred = np.argmax(py_x)
+            max_prob = scale(py_x[y_pred])
+            probs[i + self.window_size] = max_prob
             print ("y_pred: %d , max_prod: %.8f, y_true_prob: %.8f ,"
-                   %(y_pred, max(py_x), py_x[y[i]]))
+                   %(y_pred, max_prob, scale(py_x[y[i]])))
             if y[i] == y_pred:
                 correct += 1
 
@@ -172,8 +163,6 @@ class NaiveBayes(object):
                             "nb_prob_",
                             [0, 50000, 0, 1],
                             'Log' if log_scale else 'Normal')
-
-        return accuracy
 
     def predict(self, X):
         """
