@@ -5,8 +5,9 @@ Author: Chang Liu (fluency03)
 Data: 2016-05-12
 """
 
-
+import cPickle as pickle
 import glob
+import os
 import time
 from math import log
 import numpy as np
@@ -58,6 +59,33 @@ class NaiveBayes(object):
             self.ny[y[i]] += 1
             for j in xrange(self.window_size):
                 self.nx_y[j, X[i, j], y[i]] += 1
+
+    def save_model(self, filename):
+        """
+        Save the model information to a file.
+        """
+        print "    |-Write the model into %s ..." %filename
+        with open(filename, 'w') as pkl_file:
+            pickle.dump({'ny': self.ny, 'nx_y': self.nx_y,
+                         'window_size': self.window_size,
+                         'nb_classes': self.nb_classes,
+                         'alpha': self.alpha}, pkl_file)
+
+    def load_model(self, filename):
+        """
+        Load the model information from a file.
+        """
+        if os.path.isfile(filename):
+            print "%s existing, loading it...\n" %filename
+            with open(filename) as pkl_file:
+                model = pickle.load(pkl_file)
+                self.ny = model['ny']
+                self.nx_y = model['nx_y']
+                # self.window_size = model['window_size']
+                # self.nb_classes = model['nb_classes']
+                # self.alpha = model['alpha']
+        else:
+            print "File does not exist!"
 
     def evaluate(self, X, y, normalization=True, log_scale=False):
         """
@@ -208,7 +236,7 @@ def get_data(sequence, sentence_length=40, step=3, random_offset=True):
     return np.asarray(X_sentences), np.asarray(next_ids)
 
 
-def main(sentence_length=3):
+def main(sentence_length=3, mode='train'):
     """
     Train the model.
 
@@ -234,11 +262,15 @@ def main(sentence_length=3):
                     nb_classes=input_len,
                     alpha=1.0/input_len)
 
-    print "Train the model...\n"
-    for sequence in train_sequence:
-        X_train, y_train = get_data(sequence, sentence_length=sentence_length,
-                                    step=1, random_offset=False)
-        nb.train(X_train, y_train)
+    if mode == 'train':
+        print "Train the model...\n"
+        for sequence in train_sequence:
+            X_train, y_train = get_data(sequence, sentence_length=sentence_length,
+                                        step=1, random_offset=False)
+            nb.train(X_train, y_train)
+        nb.save_model('2.pkl')
+    elif mode == 'load':
+        nb.load_model('2.pkl')
 
     print "Evaluate the model...\n"
     for sequence in val_sequence:
