@@ -55,7 +55,8 @@ One deeper material about RNN: [Chapter 10 - Sequence Modeling: Recurrentand Rec
 
 - Naive Bayes model:
 
-[naive_bayes.py](https://github.com/fluency03/sequence-rnn-py/blob/master/naive_bayes.py)
+[naive_bayes.py](https://github.com/fluency03/sequence-rnn-py/blob/master/naive_bayes.py) is a simple Naive Bayes model used for comparison.
+
 
 ## Data
 

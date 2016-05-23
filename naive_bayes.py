@@ -168,6 +168,97 @@ class NaiveBayes(object):
                             [0, 50000, 0, 1],
                             'Log' if log_scale else 'Normal')
 
+    def evaluate_all(self, X, y, nb_options=3, normalization=True): # pylint: disable=R0912
+        """
+        Evaluate the model.
+
+        Arguments:
+            X: {array}, X evaluation data.
+            y: {array}, y evaluation data.
+            nb_options: {interger}, number of predicted options.
+            normalization: {bool}, whether do the normalization.
+        """
+        N = np.sum(self.ny)
+        length = len(y)
+        print "length: %d " %length
+
+        probs = np.zeros((nb_options+1, length + self.window_size))
+        for o in xrange(nb_options+1):
+            probs[o][:self.window_size] = 1.0
+
+        # probability in negative log scale
+        log_probs = np.zeros((nb_options+1, length + self.window_size))
+
+        # count the number of correct predictions
+        nb_correct = [0] * (nb_options+1)
+
+        # ------------------- Prior ------------------- #
+        py = np.zeros(self.nb_classes)
+        for i in xrange(self.nb_classes):
+            py[i] = ((self.ny[i] + self.alpha) /
+                     (N + self.alpha * self.nb_classes))
+
+        try:
+            for i in xrange(length):
+                print "evaluating %d ..." %i
+                # ------------------- Likelihood ------------------- #
+                px_y = np.zeros((self.nb_classes, self.window_size))
+                for p in xrange(self.nb_classes):
+                    for k in xrange(self.window_size):
+                        px_y[p, k] = ((self.nx_y[k, X[i, k], p] +
+                                       self.alpha) /
+                                      (self.ny[p] +
+                                       self.alpha * self.nb_classes))
+                # ------------------- Posterior ------------------- #
+                py_x = np.zeros(self.nb_classes)
+                for j in xrange(self.nb_classes):
+                    py_x[j] = py[j] * np.prod(px_y[j])
+
+                # ------------------- Normalization ------------------- #
+                if normalization:
+                    py_x_sum = np.sum(py_x)
+                    py_x = np.asarray([py_x[p] / py_x_sum
+                                       for p in xrange(self.nb_classes)])
+
+                # ------------------- Prediction ------------------- #
+                # check the prediction
+                y_pred = np.argsort(py_x)[-nb_options:][::-1]
+                y_true = y[i]
+                print y_pred, y_true
+
+                next_probs = [0.0] * (nb_options+1)
+                next_probs[0] = py_x[y_true]
+
+                for o in xrange(nb_options):
+                    if y_true == y_pred[o]:
+                        next_probs[o+1] = 1.0
+                        nb_correct[o+1] += 1
+
+                next_probs = np.maximum.accumulate(next_probs)
+                print next_probs
+
+                for k in xrange(nb_options+1):
+                    probs[k, i + self.window_size] = next_probs[k]
+                    # get the negative log probability
+                    log_probs[k, i + self.window_size] = -log(next_probs[k])
+
+        except:
+            print "KeyboardInterrupt"
+
+        nb_correct = np.add.accumulate(nb_correct)
+        for n in xrange(nb_options+1):
+            print "Accuracy %d: %.4f%%" %(n, (nb_correct[n] * 100.0 / (i + 1))) # pylint: disable=W0631
+
+        print "    |-Plot figures ..."
+        for q in xrange(nb_options+1):
+            plot_and_write_prob(probs[q],
+                                "nb_prob_"+str(q),
+                                [0, 50000, 0, 1],
+                                'Normal')
+            plot_and_write_prob(log_probs[q],
+                                "nb_log_prob_"+str(q),
+                                [0, 50000, 0, 25],
+                                'Log')
     def predict(self, X):
         """
         Predict next sequence.
@@ -274,15 +365,20 @@ def main(sentence_length=3, mode='train'):
             X_train, y_train = get_data(sequence, sentence_length=sentence_length,
                                         step=1, random_offset=False)
             nb.train(X_train, y_train)
-        nb.save_model('2.pkl')
+        # nb.save_model('2.pkl')
     elif mode == 'load':
         nb.load_model('2.pkl')
 
     print "Evaluate the model...\n"
+    # for sequence in val_sequence:
+    #     X_val, y_val = get_data(sequence, sentence_length=sentence_length,
+    #                             step=1, random_offset=False)
+    #     nb.evaluate(X_val, y_val, normalization=True, log_scale=False)
+
     for sequence in val_sequence:
         X_val, y_val = get_data(sequence, sentence_length=sentence_length,
                                 step=1, random_offset=False)
-        nb.evaluate(X_val, y_val, normalization=True, log_scale=False)
+        nb.evaluate_all(X_val, y_val, nb_options=3, normalization=True)
 
     stop_time = time.time()
     print "Stop...\n"
